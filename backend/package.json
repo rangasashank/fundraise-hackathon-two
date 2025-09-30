@@ -17,7 +17,8 @@
     "migrate:status": "node scripts/runMigration.js status",
     "migrate:dry-run": "node scripts/runMigration.js up --dry-run",
     "migrate:fix-indexes": "node scripts/fixIndexes.js",
-    "migrate:check-indexes": "node scripts/checkIndexes.js"
+    "migrate:check-indexes": "node scripts/checkIndexes.js",
+    "dev": "nodemon index.js"
   },
   "author": "MeaningfulWork",
   "license": "ISC",
