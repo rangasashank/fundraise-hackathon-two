@@ -2,15 +2,15 @@
   "name": "meaningfulwork",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "engines": {
     "node": "22.16.0"
   },
   "scripts": {
-    "start": "node ./dist/src/index.js",
+    "start": "node ./dist/index.js",
     "start-prod": "node ./dist/index.js",
     "build": "tsc",
-    "server": "ts-node-dev src/index.js",
+    "server": "ts-node-dev --respawn --transpile-only src/index.ts",
     "test": "jest",
     "migrate:up": "node scripts/runMigration.js up",
     "migrate:down": "node scripts/runMigration.js down",
@@ -18,7 +18,7 @@
     "migrate:dry-run": "node scripts/runMigration.js up --dry-run",
     "migrate:fix-indexes": "node scripts/fixIndexes.js",
     "migrate:check-indexes": "node scripts/checkIndexes.js",
-    "dev": "nodemon index.js"
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
   },
   "author": "MeaningfulWork",
   "license": "ISC",
@@ -110,6 +110,7 @@
     "@babel/preset-env": "^7.12.1",
     "@babel/traverse": "^7.12.5",
     "@babel/types": "^7.12.6",
+    "@types/cors": "^2.8.17",
     "@types/express": "^4.17.11",
     "@types/jest": "^29.2.6",
     "@types/lodash": "^4.17.19",
