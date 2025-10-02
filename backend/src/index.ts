@@ -1,31 +1,47 @@
-import cors from 'cors';
-import express, { Request, Response, NextFunction } from 'express';
-import dotenv from 'dotenv';
-import connectDB from './config/database';
+import cors from "cors"
+import express, { Request, Response, NextFunction } from "express"
+import dotenv from "dotenv"
+import connectDB from "./config/database"
+import notetakerRoutes from "./routes/notetaker"
+import webhookRoutes from "./routes/webhook"
 
-dotenv.config();
+dotenv.config()
 
-const app = express();
+const app = express()
 
-connectDB();
+connectDB()
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
-app.get('/', (req: Request, res: Response) => {
-  res.json({ message: 'Welcome to the API' });
-});
+// Root route
+app.get("/", (req: Request, res: Response) => {
+	res.json({ message: "Welcome to the API" })
+})
 
+// Health check endpoint
+app.get("/health", (req: Request, res: Response) => {
+	res.json({
+		status: "ok",
+		timestamp: new Date().toISOString(),
+	})
+})
+
+// API routes
+app.use("/api/notetaker", notetakerRoutes)
+app.use("/api/webhooks", webhookRoutes)
+
+// Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error((err as Error).stack);
-  res.status(500).json({
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : {}
-  });
-});
+	console.error((err as Error).stack)
+	res.status(500).json({
+		message: "Something went wrong!",
+		error: process.env.NODE_ENV === "development" ? err.message : {},
+	})
+})
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 4000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 4000
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+	console.log(`Server is running on port ${PORT}`)
+})
