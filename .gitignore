@@ -1,0 +1,98 @@
+# ----------------------------
+# General
+# ----------------------------
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+build/
+.cache/
+.temp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Coverage and test outputs
+coverage/
+*.lcov
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# ----------------------------
+# Frontend (Next.js)
+# ----------------------------
+# Next.js build output
+/frontend/.next/
+/frontend/out/
+
+# Next.js export folder
+out/
+
+# Next.js telemetry
+.next/
+.vercel/
+
+# ----------------------------
+# Backend (Express)
+# ----------------------------
+# Express build artifacts (if using TypeScript or transpiling)
+backend/dist/
+backend/build/
+
+# PM2 or similar process manager logs
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ----------------------------
+# Misc
+# ----------------------------
+# Yarn v2
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+
+# dotenv backup
+.env.bak
+
+# Local development databases (if applicable)
+*.sqlite
+*.db
+
+# ----------------------------
+# Optional: Ignore any local secrets/config folders
+# ----------------------------
+/config/local.json
+/secrets/
