@@ -4,10 +4,6 @@ export interface InviteNotetakerRequest {
   meetingLink: string;
   joinTime?: number;
   name?: string;
-  enableSummary?: boolean;
-  enableActionItems?: boolean;
-  summaryInstructions?: string;
-  actionItemsInstructions?: string;
 }
 
 export interface NotetakerSession {
@@ -25,8 +21,6 @@ export interface NotetakerSession {
     transcription: boolean;
     summary: boolean;
     actionItems: boolean;
-    summaryInstructions?: string;
-    actionItemsInstructions?: string;
   };
   createdAt: string;
   updatedAt: string;

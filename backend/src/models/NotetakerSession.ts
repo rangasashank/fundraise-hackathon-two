@@ -14,8 +14,6 @@ export interface INotetakerSession extends Document {
     transcription: boolean;
     summary: boolean;
     actionItems: boolean;
-    summaryInstructions?: string;
-    actionItemsInstructions?: string;
   };
   grantId?: string;
   calendarId?: string;
@@ -49,13 +47,38 @@ const NotetakerSessionSchema: Schema = new Schema(
     },
     state: {
       type: String,
-      enum: ['scheduled', 'connecting', 'connected', 'disconnected', 'failed', 'cancelled'],
+      enum: [
+        'scheduled',
+        'connecting',
+        'connected',
+        'attending',
+        'waiting_for_entry',
+        'disconnected',
+        'failed_entry',
+        'failed',
+        'cancelled',
+        'completed'
+      ],
       default: 'scheduled',
       index: true,
     },
     meetingState: {
       type: String,
-      enum: ['dispatched', 'joined', 'left', 'failed_entry', 'api_request'],
+      enum: [
+        'dispatched',
+        'recording_active',
+        'waiting_for_entry',
+        'entry_denied',
+        'no_response',
+        'kicked',
+        'no_participants',
+        'no_meeting_activity',
+        'bad_meeting_code',
+        'api_request',
+        'internal_error',
+        'meeting_complete',
+        'meeting_ended'
+      ],
     },
     meetingSettings: {
       audioRecording: {
@@ -77,12 +100,6 @@ const NotetakerSessionSchema: Schema = new Schema(
       actionItems: {
         type: Boolean,
         default: false,
-      },
-      summaryInstructions: {
-        type: String,
-      },
-      actionItemsInstructions: {
-        type: String,
       },
     },
     grantId: {

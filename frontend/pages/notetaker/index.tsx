@@ -12,24 +12,81 @@ export default function NotetakerDashboard() {
   // Form state
   const [meetingLink, setMeetingLink] = useState('');
   const [name, setName] = useState('Nylas Notetaker');
-  const [enableSummary, setEnableSummary] = useState(false);
-  const [enableActionItems, setEnableActionItems] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadSessions();
   }, []);
 
-  const loadSessions = async () => {
+  // Real-time updates using Server-Sent Events (SSE)
+  useEffect(() => {
+    console.log('🔗 Setting up SSE connection for real-time updates...');
+
+    const eventSource = new EventSource('http://localhost:4000/api/sse/sessions');
+
+    eventSource.onopen = () => {
+      console.log('✅ SSE connection established');
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        console.log('📡 Received SSE message:', message.type, message);
+
+        if (message.type === 'session_update') {
+          // Update specific session in the list
+          setSessions(prevSessions =>
+            prevSessions.map(session =>
+              session.notetakerId === message.data.notetakerId
+                ? { ...session, state: message.data.state, meetingState: message.data.meetingState }
+                : session
+            )
+          );
+          console.log('🔄 Updated session:', message.data.notetakerId, 'to state:', message.data.state);
+        } else if (message.type === 'transcript_update') {
+          // Refresh sessions to show transcript availability
+          console.log('📝 Transcript update received, refreshing sessions...');
+          loadSessions(false);
+        } else if (message.type === 'connected') {
+          console.log('🎉 SSE connection confirmed');
+        } else if (message.type === 'heartbeat') {
+          // Heartbeat - connection is alive
+        }
+      } catch (error) {
+        console.error('Error parsing SSE message:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('❌ SSE connection error:', error);
+      // Connection will automatically retry
+    };
+
+    // Cleanup on unmount
+    return () => {
+      console.log('🔌 Closing SSE connection');
+      eventSource.close();
+    };
+  }, []); // Empty dependency array - only run once on mount
+
+  const loadSessions = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       const response = await notetakerApi.getSessions();
       setSessions(response.data);
       setError('');
     } catch (err: any) {
-      setError(err.message);
+      console.error('Error loading sessions:', err);
+      // Only show error on initial load, not during polling
+      if (showLoading) {
+        setError(err.message);
+      }
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -49,14 +106,10 @@ export default function NotetakerDashboard() {
       await notetakerApi.inviteNotetaker({
         meetingLink: meetingLink.trim(),
         name,
-        enableSummary,
-        enableActionItems,
       });
 
       setSuccess('Notetaker invited successfully!');
       setMeetingLink('');
-      setEnableSummary(false);
-      setEnableActionItems(false);
       
       // Reload sessions
       await loadSessions();
@@ -100,10 +153,30 @@ export default function NotetakerDashboard() {
       case 'scheduled': return 'bg-blue-100 text-blue-800';
       case 'connecting': return 'bg-yellow-100 text-yellow-800';
       case 'connected': return 'bg-green-100 text-green-800';
+      case 'attending': return 'bg-green-100 text-green-800';
+      case 'waiting_for_entry': return 'bg-yellow-100 text-yellow-800';
       case 'disconnected': return 'bg-gray-100 text-gray-800';
+      case 'failed_entry': return 'bg-red-100 text-red-800';
       case 'failed': return 'bg-red-100 text-red-800';
       case 'cancelled': return 'bg-gray-100 text-gray-800';
+      case 'completed': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStateDisplayName = (state: string) => {
+    switch (state) {
+      case 'scheduled': return 'Scheduled';
+      case 'connecting': return 'Connecting';
+      case 'connected': return 'Connected';
+      case 'attending': return 'Attending';
+      case 'waiting_for_entry': return 'Waiting for Entry';
+      case 'disconnected': return 'Disconnected';
+      case 'failed_entry': return 'Failed to Enter';
+      case 'failed': return 'Failed';
+      case 'cancelled': return 'Cancelled';
+      case 'completed': return 'Completed';
+      default: return state;
     }
   };
 
@@ -172,28 +245,10 @@ export default function NotetakerDashboard() {
               />
             </div>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={enableSummary}
-                  onChange={(e) => setEnableSummary(e.target.checked)}
-                  style={{ marginRight: 8 }}
-                />
-                <span>Enable AI Summary</span>
-              </label>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={enableActionItems}
-                  onChange={(e) => setEnableActionItems(e.target.checked)}
-                  style={{ marginRight: 8 }}
-                />
-                <span>Enable Action Items</span>
-              </label>
+            <div style={{ marginBottom: 16, padding: 12, backgroundColor: '#f8f9fa', borderRadius: 4 }}>
+              <p style={{ margin: 0, fontSize: 14, color: '#666' }}>
+                <strong>Transcription:</strong> Enabled by default for all meetings
+              </p>
             </div>
 
             {error && (
@@ -278,8 +333,13 @@ export default function NotetakerDashboard() {
                           fontSize: 12,
                           fontWeight: 500,
                         }} className={getStateBadgeColor(session.state)}>
-                          {session.state}
+                          {getStateDisplayName(session.state)}
                         </span>
+                        {session.meetingState && (
+                          <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
+                            {session.meetingState.replace(/_/g, ' ')}
+                          </div>
+                        )}
                       </td>
                       <td style={{ padding: 12 }}>
                         {new Date(session.createdAt).toLocaleString()}
@@ -316,8 +376,8 @@ export default function NotetakerDashboard() {
                               Cancel
                             </button>
                           )}
-                          
-                          {session.state === 'connected' && (
+
+                          {(session.state === 'attending' || session.state === 'waiting_for_entry' || session.state === 'connecting') && (
                             <button
                               onClick={() => handleRemove(session._id)}
                               style={{

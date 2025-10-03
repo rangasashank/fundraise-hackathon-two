@@ -30,9 +30,7 @@ export default function Home() {
 					<ul style={{ lineHeight: 2, marginBottom: 32 }}>
 						<li>✅ Invite Nylas Notetaker to Zoom meetings</li>
 						<li>✅ Automatic meeting transcription</li>
-						<li>✅ AI-generated summaries</li>
-						<li>✅ Action items extraction</li>
-						<li>✅ Audio & video recording</li>
+						<li>✅ Audio recording</li>
 						<li>✅ Real-time webhook notifications</li>
 					</ul>
 

@@ -7,10 +7,6 @@ interface InviteNotetakerParams {
 	meetingLink: string
 	joinTime?: number
 	name?: string
-	enableSummary?: boolean
-	enableActionItems?: boolean
-	summaryInstructions?: string
-	actionItemsInstructions?: string
 }
 
 interface NotetakerResponse {
@@ -26,12 +22,6 @@ interface NotetakerResponse {
 		transcription: boolean
 		summary: boolean
 		action_items: boolean
-		summary_settings?: {
-			custom_instructions?: string
-		}
-		action_items_settings?: {
-			custom_instructions?: string
-		}
 	}
 }
 
@@ -65,27 +55,14 @@ class NylasService {
 					audio_recording: true,
 					video_recording: false,
 					transcription: true,
-					summary: params.enableSummary || false,
-					action_items: params.enableActionItems || false,
+					summary: false,
+					action_items: false,
 				},
 			}
 
 			// Add join_time if provided
 			if (params.joinTime) {
 				requestBody.join_time = params.joinTime
-			}
-
-			// Add custom instructions if provided
-			if (params.enableSummary && params.summaryInstructions) {
-				requestBody.meeting_settings.summary_settings = {
-					custom_instructions: params.summaryInstructions,
-				}
-			}
-
-			if (params.enableActionItems && params.actionItemsInstructions) {
-				requestBody.meeting_settings.action_items_settings = {
-					custom_instructions: params.actionItemsInstructions,
-				}
 			}
 
 			// Use standalone notetaker endpoint (no grant ID required)
@@ -230,14 +207,25 @@ class NylasService {
 	 */
 	async downloadTextFile(fileUrl: string): Promise<string> {
 		try {
+			console.log(`🔗 Downloading file from URL: ${fileUrl}`);
 			const response = await axios.get(fileUrl, {
 				headers: {
 					Authorization: `Bearer ${this.apiKey}`,
 				},
-				responseType: "text",
+				// Remove responseType to let axios auto-detect JSON vs text
 			})
 
-			return response.data
+			console.log(`📥 Downloaded response type:`, typeof response.data);
+			console.log(`📥 Downloaded response content:`, response.data);
+
+			// If response is an object, convert to JSON string
+			if (typeof response.data === 'object') {
+				console.log(`🔄 Converting object response to JSON string`);
+				return JSON.stringify(response.data);
+			}
+
+			// If response is already a string, return as-is
+			return String(response.data);
 		} catch (error: any) {
 			console.error(
 				"Error downloading text file:",

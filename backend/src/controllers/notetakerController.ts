@@ -12,10 +12,6 @@ export const inviteNotetaker = async (req: Request, res: Response): Promise<void
       meetingLink,
       joinTime,
       name,
-      enableSummary,
-      enableActionItems,
-      summaryInstructions,
-      actionItemsInstructions,
     } = req.body;
 
     // Validate meeting link
@@ -40,10 +36,6 @@ export const inviteNotetaker = async (req: Request, res: Response): Promise<void
       meetingLink,
       joinTime,
       name,
-      enableSummary,
-      enableActionItems,
-      summaryInstructions,
-      actionItemsInstructions,
     });
 
     // Save session to database
@@ -60,8 +52,6 @@ export const inviteNotetaker = async (req: Request, res: Response): Promise<void
         transcription: notetaker.meeting_settings.transcription,
         summary: notetaker.meeting_settings.summary,
         actionItems: notetaker.meeting_settings.action_items,
-        summaryInstructions: notetaker.meeting_settings.summary_settings?.custom_instructions,
-        actionItemsInstructions: notetaker.meeting_settings.action_items_settings?.custom_instructions,
       },
     });
 
