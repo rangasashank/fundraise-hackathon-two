@@ -13,88 +13,138 @@ export interface Meeting {
 export const mockMeetings: Meeting[] = [
   {
     id: "1",
-    title: "Q1 Planning Session",
+    title: "Community Outreach Planning",
     date: new Date(),
     time: "9:00 AM - 10:30 AM",
     attendees: ["Sarah Chen", "Michael Rodriguez", "Emily Watson", "David Kim"],
-    description: "Quarterly planning session to discuss goals, priorities, and resource allocation for Q1.",
+    description: "Quarterly planning session to discuss community programs, volunteer recruitment, and resource allocation for Q1.",
     hasTranscript: true,
-    transcript: `Sarah Chen: Good morning everyone. Let's start with our Q1 planning. I'd like to begin by reviewing our key objectives for the quarter.
+    transcript: `Sarah Chen: Good morning everyone. Let's start with our Q1 community outreach planning. We need to address our ongoing volunteer shortage and transportation challenges.
 
-Michael Rodriguez: Thanks Sarah. I think our main focus should be on launching the new product feature by end of February. We've been working on this for months and it's critical we hit that deadline.
+Michael Rodriguez: Thanks Sarah. Our biggest issue is volunteer recruitment. We're down 30% from last quarter and it's affecting our food distribution program. We desperately need more volunteers for weekend shifts.
 
-Emily Watson: Agreed. From a marketing perspective, we need at least two weeks lead time before launch to prepare our campaigns. So we're looking at a February 15th code freeze at the latest.
+Emily Watson: I agree. The volunteer retention is also concerning. We've had several long-term volunteers leave due to transportation issues getting to our warehouse location. Maybe we need to consider providing transportation assistance or finding volunteers closer to the site.
 
-David Kim: That's tight but doable. My team can commit to that timeline if we prioritize this over the smaller feature requests. We'll need to defer some of the nice-to-have items to Q2.
+David Kim: The transportation logistics are definitely a problem. Our delivery van broke down twice last month, and we had to cancel three food deliveries to senior centers. We need budget allocation for vehicle maintenance and possibly a backup vehicle.
 
-Sarah Chen: Okay, so we're aligned on the February 15th code freeze and end of month launch. Emily, can you prepare a detailed marketing timeline by next week?
+Sarah Chen: These are critical issues. Michael, can you prepare a volunteer recruitment strategy by next week? We need to focus on both attracting new volunteers and improving retention.
 
-Emily Watson: Absolutely. I'll have that ready by Wednesday.
+Emily Watson: I can help with outreach. We should leverage social media and partner with local colleges for student volunteers.
 
-Michael Rodriguez: We should also discuss the budget allocation. I'm proposing we increase our infrastructure spend by 20% to handle the expected user growth.
+Michael Rodriguez: Good idea. We should also discuss volunteer training. Many new volunteers feel overwhelmed and quit after their first shift. Better training and mentorship could improve retention.
 
-David Kim: That makes sense. We've been seeing performance issues during peak times. The additional capacity will be necessary.
+David Kim: For transportation, I propose we allocate emergency funding for van repairs and explore partnerships with local transportation services for volunteer shuttles.
 
-Sarah Chen: I'll review the budget proposal and get back to you by Friday. Let's also schedule a weekly check-in every Monday at 10 AM to track our progress.
+Sarah Chen: Excellent points. Let's also address our funding situation. The grant application for the community kitchen was rejected, and we need alternative funding sources.
 
-Emily Watson: Sounds good. I'll send out calendar invites.
+Emily Watson: I've been researching corporate sponsorship opportunities. Several local businesses have expressed interest in supporting our programs.
 
-Michael Rodriguez: One more thing - we need to finalize the pricing strategy. Can we schedule a separate meeting for that?
+Michael Rodriguez: We should also consider a fundraising event. The annual gala was successful last year, but we need more volunteers to organize it.
 
-Sarah Chen: Yes, let's do that next Tuesday at 2 PM. I'll invite the finance team as well.`,
-    notes: `Key Decisions:
-- Product launch target: End of February
-- Code freeze: February 15th
-- Marketing timeline due: Next Wednesday
-- Weekly check-ins: Mondays at 10 AM
-- Budget review: Due Friday
-- Pricing strategy meeting: Next Tuesday at 2 PM
+Sarah Chen: Let's schedule weekly check-ins every Monday at 10 AM to track our progress on these issues.`,
+    notes: `Key Issues Discussed:
+- Volunteer shortage: Down 30% from last quarter
+- Volunteer retention problems due to transportation barriers
+- Vehicle maintenance issues affecting food delivery program
+- Rejected grant application for community kitchen
+- Need for improved volunteer training and mentorship
 
 Action Items:
-- Prepare marketing timeline (Emily - Due Wednesday)
-- Review budget proposal (Sarah - Due Friday)
-- Schedule weekly check-ins (Emily - This week)
-- Schedule pricing strategy meeting (Sarah - Next Tuesday)`,
+- Prepare volunteer recruitment strategy (Michael - Due next Wednesday)
+- Research corporate sponsorship opportunities (Emily - Ongoing)
+- Allocate emergency funding for van repairs (David - Due Friday)
+- Schedule weekly progress check-ins (Sarah - This week)
+- Explore volunteer transportation assistance options (Emily - Due next week)`,
   },
   {
     id: "2",
-    title: "Design Review",
+    title: "Emergency Response Team Meeting",
     date: new Date(),
     time: "2:00 PM - 3:00 PM",
     attendees: ["Alex Thompson", "Jessica Lee", "Ryan Martinez"],
-    description: "Review of new dashboard designs and user interface updates.",
+    description: "Emergency meeting to address transportation crisis and volunteer coordination issues.",
     hasTranscript: true,
-    transcript: `Alex Thompson: Thanks for joining. Let's review the new dashboard designs. Jessica, can you walk us through the changes?
+    transcript: `Alex Thompson: Thanks for joining on short notice. We have a transportation crisis that needs immediate attention. Our main delivery truck is out of service and we have 200 food boxes that need to be delivered to families today.
 
-Jessica Lee: Sure. We've simplified the navigation and made the key metrics more prominent. The new design reduces clicks by 40% for common tasks.
+Jessica Lee: This is the third transportation issue this month. We really need to address our vehicle reliability problems. The constant breakdowns are affecting our ability to serve the community consistently.
 
-Ryan Martinez: I like the direction. The color scheme is much cleaner. One concern - the mobile view seems cramped. Can we adjust the spacing?
+Ryan Martinez: I've been in touch with local volunteer drivers, but we're short-staffed. Many of our regular volunteer drivers are unavailable today, and we don't have enough backup volunteers trained for delivery routes.
 
-Jessica Lee: Good catch. I'll increase the padding on mobile and reduce the font size slightly for better readability.
+Jessica Lee: The volunteer shortage is becoming critical. We've lost several experienced volunteers recently, and our recruitment efforts aren't keeping pace with the demand for services.
 
-Alex Thompson: What about accessibility? Have we tested with screen readers?
+Alex Thompson: What about our partnership with the local church? Can they provide transportation support?
 
-Jessica Lee: Yes, we've done initial testing. All interactive elements have proper ARIA labels. We should do a full audit before launch though.
+Ryan Martinez: I reached out, but their van is also being repaired. However, they offered to help with volunteer recruitment for next week's food distribution.
 
-Ryan Martinez: I can coordinate with the QA team for comprehensive accessibility testing. Let's aim to complete that by next Friday.
+Jessica Lee: We need a systematic approach to this. The transportation issues and volunteer shortages are interconnected. When we can't deliver reliably, volunteers get frustrated and leave.
 
-Alex Thompson: Perfect. Jessica, can you have the mobile adjustments ready by Thursday so we can review again?
+Alex Thompson: You're right. Let's develop a comprehensive plan. We need backup transportation options and a stronger volunteer recruitment and retention strategy.
 
-Jessica Lee: Absolutely. I'll also prepare some alternative color schemes for the data visualizations to improve contrast.`,
-    notes: `Action Items:
-- Adjust mobile spacing and fonts (Jessica - Due Thursday)
-- Coordinate accessibility testing with QA (Ryan - Due next Friday)
-- Prepare alternative color schemes (Jessica - Due Thursday)
-- Schedule follow-up review (Alex - This week)`,
+Ryan Martinez: I suggest we create an emergency transportation fund and establish partnerships with local delivery services for backup support.
+
+Jessica Lee: And we should implement a volunteer mentorship program to improve retention. New volunteers need better support and training.
+
+Alex Thompson: Excellent ideas. Let's also improve our communication with volunteers about schedule changes and transportation issues.`,
+    notes: `Critical Issues:
+- Main delivery truck out of service (third breakdown this month)
+- 200 food boxes need emergency delivery today
+- Severe volunteer shortage affecting delivery capacity
+- Lost several experienced volunteers recently
+- Transportation reliability issues causing volunteer frustration
+
+Action Items:
+- Coordinate emergency delivery with available volunteers (Ryan - Today)
+- Establish emergency transportation fund (Alex - Due this week)
+- Research partnerships with local delivery services (Jessica - Due Friday)
+- Develop volunteer mentorship program proposal (Jessica - Due next week)
+- Improve volunteer communication protocols (Ryan - Due next week)`,
   },
   {
     id: "3",
-    title: "Sprint Retrospective",
+    title: "Budget Crisis & Funding Strategy",
     date: new Date(Date.now() + 86400000),
     time: "10:00 AM - 11:00 AM",
     attendees: ["Chris Anderson", "Maria Garcia", "Tom Wilson", "Lisa Brown"],
-    description: "Retrospective meeting to discuss what went well and areas for improvement.",
-    hasTranscript: false,
+    description: "Emergency budget meeting to address funding shortfall and develop fundraising strategy.",
+    hasTranscript: true,
+    transcript: `Chris Anderson: Thank you all for coming. We're facing a serious budget crisis. Our main grant funding has been cut by 40%, and we need to make some difficult decisions about our programs.
+
+Maria Garcia: This is devastating news. The funding cut will directly impact our ability to serve families in need. We're already struggling with volunteer recruitment, and now we have to cut services too?
+
+Tom Wilson: What programs are at risk? The food pantry and transportation services are our core offerings. We can't afford to reduce those.
+
+Lisa Brown: I've been reviewing our expenses. The biggest costs are transportation - fuel, vehicle maintenance, and insurance. If we can't secure additional funding, we might have to reduce delivery frequency.
+
+Chris Anderson: That's exactly what I'm worried about. Reduced services will hurt the families who depend on us, and it might also affect volunteer morale. People volunteer because they want to make a difference.
+
+Maria Garcia: Have we explored all funding options? What about corporate sponsorships or individual donor campaigns?
+
+Tom Wilson: I've reached out to several local businesses, but the economic climate is tough. Many companies are cutting their charitable giving budgets.
+
+Lisa Brown: We should consider a community fundraising event. The volunteer appreciation dinner last year raised some funds, but we need something bigger.
+
+Chris Anderson: Good idea. But organizing a major fundraising event requires significant volunteer coordination, and we're already short-staffed.
+
+Maria Garcia: Maybe we can partner with other local nonprofits? Share resources and volunteers for a joint fundraising effort?
+
+Tom Wilson: That could work. The homeless shelter and the senior center face similar funding challenges. A collaborative approach might be more effective.
+
+Lisa Brown: We also need to look at our operational efficiency. Are there ways to reduce transportation costs while maintaining service levels?
+
+Chris Anderson: Absolutely. Let's explore route optimization and volunteer carpooling options. Every dollar saved can go toward serving more families.`,
+    notes: `Budget Crisis Details:
+- Main grant funding cut by 40%
+- Transportation costs are highest expense category
+- Risk of reducing delivery frequency and service levels
+- Volunteer morale concerns due to service cuts
+- Need for emergency fundraising initiatives
+
+Action Items:
+- Research collaborative fundraising with other nonprofits (Maria - Due next week)
+- Develop major fundraising event proposal (Lisa - Due Friday)
+- Analyze transportation cost reduction options (Tom - Due next week)
+- Continue corporate sponsorship outreach (Tom - Ongoing)
+- Create emergency budget scenarios (Chris - Due this week)`,
   },
   {
     id: "4",
@@ -119,76 +169,125 @@ Jessica Lee: Absolutely. I'll also prepare some alternative color schemes for th
 export const pastMeetings: Meeting[] = [
   {
     id: "past-1",
-    title: "Product Roadmap Review",
+    title: "Volunteer Appreciation & Retention Review",
     date: new Date(Date.now() - 86400000 * 2),
     time: "11:00 AM - 12:00 PM",
     attendees: ["Sarah Chen", "Michael Rodriguez", "Tom Wilson"],
-    description: "Review of product roadmap and upcoming feature priorities.",
+    description: "Review of volunteer retention issues and appreciation program effectiveness.",
     hasTranscript: true,
-    transcript: `Sarah Chen: Let's review our product roadmap for the next quarter. Michael, can you walk us through the priorities?
+    transcript: `Sarah Chen: Let's review our volunteer retention challenges. We've lost 15 volunteers in the past month, and I want to understand why.
 
-Michael Rodriguez: Sure. We have three major initiatives: the mobile app redesign, API v2 launch, and the analytics dashboard. I think we should prioritize the API launch first.
+Michael Rodriguez: I've been conducting exit interviews. The main issues are transportation difficulties getting to our site, lack of proper training, and feeling overwhelmed during busy shifts.
 
-Tom Wilson: I agree. Many of our enterprise clients have been asking for the new API features. It's becoming a blocker for some deals.
+Tom Wilson: The transportation issue keeps coming up. Many volunteers don't have reliable cars, and our location isn't easily accessible by public transit.
 
-Sarah Chen: Okay, let's make API v2 our top priority. What's the timeline looking like?
+Sarah Chen: That's a significant barrier. What solutions have we considered?
 
-Michael Rodriguez: If we start next week, we can have a beta ready in 6 weeks and production release in 10 weeks.
+Michael Rodriguez: We could provide transportation vouchers or organize volunteer carpools. Some nonprofits offer shuttle services from central locations.
 
-Tom Wilson: That works. I'll coordinate with the sales team to identify beta testers from our enterprise clients.
+Tom Wilson: The training issue is also critical. New volunteers often quit after their first shift because they feel unprepared. We need a better onboarding process.
 
-Sarah Chen: Perfect. Let's schedule weekly syncs to track progress.`,
-    notes: `Decisions:
-- API v2 is top priority
-- Beta in 6 weeks, production in 10 weeks
-- Tom to coordinate beta testers
-- Weekly syncs scheduled
+Sarah Chen: I agree. What about volunteer recognition? Are we doing enough to show appreciation?
+
+Michael Rodriguez: Our volunteer appreciation events are well-received, but we need more frequent recognition. Maybe monthly volunteer spotlights or small thank-you gifts.
+
+Tom Wilson: We should also address the communication issues. Volunteers often complain about last-minute schedule changes and poor coordination.
+
+Sarah Chen: These are all actionable items. Let's prioritize transportation assistance and improved training. Better volunteer retention will help with our staffing shortages.`,
+    notes: `Key Retention Issues:
+- Lost 15 volunteers in past month
+- Transportation barriers to volunteer site
+- Inadequate volunteer training and onboarding
+- Poor communication and coordination
+- Need for more frequent volunteer recognition
 
 Action Items:
-- Start API v2 development (Michael - Next week)
-- Identify beta testers (Tom - This week)
-- Schedule weekly syncs (Sarah - This week)`,
+- Research transportation assistance options (Michael - Next week)
+- Develop improved volunteer training program (Tom - This week)
+- Implement monthly volunteer recognition system (Sarah - This week)
+- Improve volunteer communication protocols (Michael - Next week)`,
   },
   {
     id: "past-2",
-    title: "Marketing Campaign Debrief",
+    title: "Funding Crisis Response Meeting",
     date: new Date(Date.now() - 86400000 * 3),
     time: "2:00 PM - 3:00 PM",
     attendees: ["Emily Watson", "Jessica Lee", "Amanda White"],
-    description: "Debrief on recent marketing campaign performance.",
+    description: "Emergency meeting to address recent grant rejection and funding shortfall.",
     hasTranscript: true,
-    transcript: `Emily Watson: Thanks for joining. Let's review the performance of our recent campaign. Overall, we exceeded our targets by 25%.
+    transcript: `Emily Watson: Thanks for joining on short notice. We received word that our largest grant application was rejected. This creates a $50,000 funding gap for our programs.
 
-Jessica Lee: That's fantastic! The new creative assets really resonated with our audience. Click-through rates were up 40%.
+Jessica Lee: This is a major setback. That grant was supposed to fund our volunteer coordinator position and transportation costs for the next year.
 
-Amanda White: The email sequence performed particularly well. We saw a 15% conversion rate, which is double our usual.
+Amanda White: Without that funding, we'll have to make some difficult decisions. The volunteer coordination role is critical - we're already struggling with volunteer recruitment and retention.
 
-Emily Watson: What do you think made the difference?
+Emily Watson: What are our options? Can we apply for emergency funding elsewhere?
 
-Jessica Lee: I think the personalization and the focus on customer pain points really helped. We also timed it well with the product launch.
+Jessica Lee: I've been researching alternative grants, but most have long application processes. We need immediate solutions to keep our programs running.
 
-Amanda White: Should we replicate this approach for the next campaign?
+Amanda White: We could launch an emergency fundraising campaign, but that requires significant volunteer effort to organize and promote.
 
-Emily Watson: Absolutely. Let's document what worked and create a playbook for future campaigns.`,
-    notes: `Results:
-- Exceeded targets by 25%
-- CTR up 40%
-- Email conversion rate: 15%
-- Create playbook for future campaigns
+Emily Watson: The irony is that we need volunteers to raise funds to support volunteers. It's a challenging cycle.
+
+Jessica Lee: Maybe we should focus on corporate sponsorships? Local businesses might be more responsive than grant foundations.
+
+Amanda White: Good idea. We should also consider reducing our transportation costs. Maybe partner with other nonprofits to share delivery routes and vehicle expenses.
+
+Emily Watson: These are all viable options. The key is acting quickly before the funding gap affects our service delivery. Our community depends on us.`,
+    notes: `Funding Crisis:
+- Major grant application rejected ($50,000 shortfall)
+- Volunteer coordinator position at risk
+- Transportation funding threatened
+- Need immediate alternative funding sources
+- Risk of service delivery disruption
 
 Action Items:
-- Document successful strategies (Emily - This week)
-- Create campaign playbook (Jessica - Next week)
-- Plan next campaign using new approach (Amanda - Next week)`,
+- Research emergency grant opportunities (Jessica - This week)
+- Launch corporate sponsorship outreach (Amanda - Next week)
+- Explore nonprofit partnerships for cost sharing (Emily - Next week)
+- Develop emergency fundraising campaign plan (Jessica - This week)`,
   },
   {
     id: "past-3",
-    title: "Engineering All-Hands",
+    title: "Program Delivery & Communication Issues",
     date: new Date(Date.now() - 86400000 * 5),
     time: "10:00 AM - 11:00 AM",
     attendees: ["David Kim", "Chris Anderson", "Ryan Martinez", "Kevin Park", "Rachel Green"],
-    description: "Monthly engineering all-hands meeting.",
-    hasTranscript: false,
+    description: "Meeting to address program delivery delays and communication breakdowns.",
+    hasTranscript: true,
+    transcript: `David Kim: We need to address the communication issues that have been affecting our program delivery. Last week, three families didn't receive their scheduled food deliveries due to coordination problems.
+
+Chris Anderson: The communication breakdown between our volunteer coordinators and delivery teams is becoming a serious problem. Volunteers are showing up at the wrong times, and families are left waiting.
+
+Ryan Martinez: Part of the issue is our outdated communication system. We're still using phone calls and text messages, which leads to missed messages and confusion.
+
+Kevin Park: The volunteer scheduling is also problematic. We don't have a centralized system, so different coordinators are giving conflicting information to volunteers.
+
+Rachel Green: This affects volunteer retention too. When volunteers show up and there's confusion about their assignments, they get frustrated and don't come back.
+
+David Kim: We need better technology solutions, but that requires funding. In the meantime, we need to improve our manual processes.
+
+Chris Anderson: What about implementing a simple shared calendar system? Even a basic Google Calendar could help with coordination.
+
+Ryan Martinez: That's a good start. We also need clearer communication protocols - who contacts whom, when, and how.
+
+Kevin Park: The program delivery delays are also affecting our reputation in the community. Word spreads quickly when families can't rely on our services.
+
+Rachel Green: We should also improve our follow-up communication with families. When there are delays, we need to notify them promptly rather than leaving them wondering.
+
+David Kim: These are all critical points. Better communication will improve both volunteer experience and program reliability.`,
+    notes: `Communication & Delivery Issues:
+- Three families missed scheduled food deliveries due to coordination problems
+- Communication breakdown between volunteer coordinators and delivery teams
+- Outdated communication systems causing missed messages
+- Lack of centralized volunteer scheduling system
+- Communication issues affecting volunteer retention and community reputation
+
+Action Items:
+- Implement shared calendar system for volunteer coordination (Chris - This week)
+- Develop clear communication protocols (Ryan - Next week)
+- Improve family notification system for delivery delays (Rachel - This week)
+- Research technology solutions for volunteer management (Kevin - Next week)`,
   },
   {
     id: "past-4",

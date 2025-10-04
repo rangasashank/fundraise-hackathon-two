@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import { Box, Typography, Container, Avatar, AvatarGroup } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { Calendar as CalendarIcon, UserPlus, Search, ChevronLeft, ChevronRight, Video, Send, Plus } from 'lucide-react'
@@ -19,6 +20,7 @@ import { Label } from '@/components/ui/label'
 import { formatDate } from '@/lib/utils'
 import { type Meeting, mockMeetings, pastMeetings } from '@/lib/mock-data'
 import { MeetingDetailsContent } from '@/components/meeting-details-content'
+import { InsightAgentSidebar } from '@/components/insight-agent-sidebar'
 
 // Styled components
 const MainContainer = styled(Box)(() => ({
@@ -84,9 +86,22 @@ const PastMeetingCard = styled(Box)(() => ({
 }))
 
 export default function MeetingsPage() {
+  const router = useRouter()
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
   const [showScheduleDialog, setShowScheduleDialog] = useState(false)
+
+  // Handle meeting query parameter from URL
+  useEffect(() => {
+    const meetingId = router.query.meeting as string
+    if (meetingId) {
+      const allMeetings = [...mockMeetings, ...pastMeetings]
+      const meeting = allMeetings.find(m => m.id === meetingId)
+      if (meeting) {
+        setSelectedMeeting(meeting)
+      }
+    }
+  }, [router.query.meeting])
 
   // Schedule meeting state
   const [newMeeting, setNewMeeting] = useState({
@@ -100,6 +115,54 @@ export default function MeetingsPage() {
   const [currentPage, setCurrentPage] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const meetingsPerPage = 4
+
+  // Insight Agent sidebar state
+  const [isInsightSidebarOpen, setIsInsightSidebarOpen] = useState(false)
+
+  // Generate tasks for insights analysis
+  const generateTasksForInsights = () => {
+    const allMeetings = [...mockMeetings, ...pastMeetings]
+    const tasks: any[] = []
+
+    allMeetings.forEach((meeting) => {
+      if (meeting.hasTranscript && meeting.notes) {
+        // Extract action items from notes
+        const actionItemsMatch = meeting.notes.match(/Action Items?:([\s\S]*?)(?=\n\n|$)/i)
+        if (actionItemsMatch) {
+          const items = actionItemsMatch[1].split('\n').filter((line) => line.trim().startsWith('-'))
+          items.forEach((item, index) => {
+            const taskText = item.replace(/^-\s*/, '').trim()
+            const assigneeMatch = taskText.match(/\(([^)]+)\s*-/)
+            const dueDateMatch = taskText.match(/Due:?\s*([^)]+)\)/)
+
+            const assignee = assigneeMatch ? assigneeMatch[1].trim() : meeting.attendees[index % meeting.attendees.length]
+            const taskTitle = taskText.split('(')[0].trim()
+
+            tasks.push({
+              id: `${meeting.id}-task-${index}`,
+              title: taskTitle,
+              description: `From ${meeting.title}`,
+              assignee,
+              dueDate: dueDateMatch
+                ? dueDateMatch[1]
+                : new Date(meeting.date.getTime() + 7 * 86400000).toISOString().split('T')[0],
+              priority: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
+              status:
+                meeting.date < new Date(Date.now() - 86400000 * 7)
+                  ? 'completed'
+                  : index % 3 === 0
+                    ? 'in-progress'
+                    : 'todo',
+              meetingId: meeting.id,
+              meetingTitle: meeting.title,
+            })
+          })
+        }
+      }
+    })
+
+    return tasks
+  }
 
   const upcomingMeetings = mockMeetings.filter((m) => m.date >= new Date())
 
@@ -166,7 +229,14 @@ export default function MeetingsPage() {
   }
 
   return (
-    <MainContainer>
+    <>
+      <MainContainer sx={{
+        paddingRight: isInsightSidebarOpen ? '420px' : '20px',
+        transition: 'padding-right var(--transition-normal)',
+        '@media (max-width: 768px)': {
+          paddingRight: isInsightSidebarOpen ? '0px' : '20px',
+        }
+      }}>
       {/* Upcoming Meetings Section */}
       <UpcomingSection>
         <Container maxWidth="xl" sx={{ py: 3 }}>
@@ -579,6 +649,32 @@ export default function MeetingsPage() {
                       </Typography>
                     </Box>
                   )}
+
+                  {/* View in Tasks Button */}
+                  <Box sx={{ pt: 2, borderTop: '1px solid var(--grey-200)' }}>
+                    <Button
+                      variant="outline"
+                      onClick={() => router.push(`/tasks?meeting=${selectedMeeting.id}`)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        px: 3,
+                        py: 1.5,
+                        borderColor: 'var(--brand-primary-300)',
+                        color: 'var(--brand-primary-600)',
+                        '&:hover': {
+                          backgroundColor: 'var(--brand-primary-50)',
+                          borderColor: 'var(--brand-primary-400)',
+                        }
+                      }}
+                    >
+                      <Video size={16} />
+                      View Tasks from this Meeting
+                    </Button>
+                  </Box>
                 </Box>
               </ScrollArea>
             )
@@ -645,5 +741,14 @@ export default function MeetingsPage() {
         </DialogContent>
       </Dialog>
     </MainContainer>
+
+    {/* Insight Agent Sidebar */}
+    <InsightAgentSidebar
+      meetings={[...mockMeetings, ...pastMeetings]}
+      tasks={generateTasksForInsights()}
+      isOpen={isInsightSidebarOpen}
+      onToggle={() => setIsInsightSidebarOpen(!isInsightSidebarOpen)}
+    />
+  </>
   )
 }

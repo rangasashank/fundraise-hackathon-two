@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
+import { useRouter } from 'next/router'
 import { Box, Typography, Checkbox } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { Users, Zap, FileText, MessageSquare, User, Calendar, Clock } from 'lucide-react'
+import { Users, Zap, FileText, MessageSquare, User, Calendar, Clock, ExternalLink } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -82,9 +83,15 @@ const ContentBox = styled(Box)(() => ({
 }))
 
 export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
+  const router = useRouter()
   const [showTranscript, setShowTranscript] = useState(false)
   const [selectedActionItems, setSelectedActionItems] = useState<Set<number>>(new Set())
   const [exportedItems, setExportedItems] = useState<Set<number>>(new Set())
+
+  // Navigate to tasks page with meeting filter
+  const handleViewInTasks = () => {
+    router.push(`/tasks?meeting=${meeting.id}`)
+  }
 
   // Mock action items for demo
   const mockActionItems = [
@@ -157,8 +164,33 @@ export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
         {/* Meeting Overview Section */}
         <Section>
           <SectionHeader>
-            <Users size={20} color="var(--brand-primary)" />
-            <SectionTitle>Meeting Overview</SectionTitle>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Users size={20} color="var(--brand-primary)" />
+              <SectionTitle>Meeting Overview</SectionTitle>
+            </Box>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleViewInTasks}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                px: 2,
+                py: 1,
+                borderColor: 'var(--brand-primary-300)',
+                color: 'var(--brand-primary-600)',
+                '&:hover': {
+                  backgroundColor: 'var(--brand-primary-50)',
+                  borderColor: 'var(--brand-primary-400)',
+                }
+              }}
+            >
+              <ExternalLink size={14} />
+              View in Tasks
+            </Button>
           </SectionHeader>
 
           {/* Meeting Info Grid */}
@@ -320,6 +352,29 @@ export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
                 width: { xs: '100%', sm: 'auto' },
                 justifyContent: { xs: 'stretch', sm: 'flex-end' }
               }}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleViewInTasks}
+                  sx={{
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    minWidth: 'auto',
+                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    borderColor: 'var(--brand-primary-300)',
+                    color: 'var(--brand-primary-600)',
+                    '&:hover': {
+                      backgroundColor: 'var(--brand-primary-50)',
+                      borderColor: 'var(--brand-primary-400)',
+                    }
+                  }}
+                >
+                  <ExternalLink size={12} />
+                  View All
+                </Button>
                 <Button
                   size="sm"
                   variant={selectedActionItems.size > 0 ? "default" : "outline"}

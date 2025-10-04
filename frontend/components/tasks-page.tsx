@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { Box, Typography, Container, Checkbox, Collapse, IconButton, Menu, MenuItem, Select, FormControl } from '@mui/material'
+import { Box, Typography, Container, Checkbox, Collapse, IconButton, Menu, MenuItem, Select, FormControl, Tooltip } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { Calendar, CheckCircle2, Circle, Clock, User, ChevronDown, ChevronRight, Trash2, MoreHorizontal, CheckSquare, Users, Video } from 'lucide-react'
+import { Calendar, CheckCircle2, Circle, Clock, User, ChevronDown, ChevronRight, Trash2, MoreHorizontal, CheckSquare, Users, Video, ExternalLink, Info, MessageSquare } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { mockMeetings, pastMeetings, type Meeting } from '@/lib/mock-data'
+import { InsightAgentSidebar } from '@/components/insight-agent-sidebar'
 
 interface Task {
   id: string
@@ -220,9 +221,57 @@ export default function TasksPage() {
     new Set(highlightMeetingId ? [highlightMeetingId] : [])
   )
 
+  // Navigate to meetings page with specific meeting
+  const handleViewMeeting = (meetingId: string) => {
+    router.push(`/meetings?meeting=${meetingId}`)
+  }
+
+  // Extract transcript context for a task
+  const getTranscriptContext = (task: Task): string => {
+    if (!task.meetingId) return ''
+
+    const allMeetings = [...mockMeetings, ...pastMeetings]
+    const meeting = allMeetings.find(m => m.id === task.meetingId)
+
+    if (!meeting || !meeting.notes) return ''
+
+    // Look for the task title in the meeting notes
+    const notes = meeting.notes.toLowerCase()
+    const taskTitle = task.title.toLowerCase()
+
+    // Find the position of the task in the notes
+    const taskIndex = notes.indexOf(taskTitle)
+    if (taskIndex === -1) {
+      // If exact match not found, try to find similar content
+      const words = taskTitle.split(' ')
+      for (const word of words) {
+        if (word.length > 3) {
+          const wordIndex = notes.indexOf(word)
+          if (wordIndex !== -1) {
+            // Extract context around the word
+            const start = Math.max(0, wordIndex - 100)
+            const end = Math.min(notes.length, wordIndex + 100)
+            return meeting.notes.substring(start, end).trim() + '...'
+          }
+        }
+      }
+      return 'Context not found in transcript'
+    }
+
+    // Extract context around the task mention
+    const start = Math.max(0, taskIndex - 80)
+    const end = Math.min(notes.length, taskIndex + 120)
+    const context = meeting.notes.substring(start, end).trim()
+
+    return context.length > 200 ? context.substring(0, 200) + '...' : context
+  }
+
   // State for enhanced task management
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
   const [dropTargetId, setDropTargetId] = useState<string | null>(null)
+
+  // Insight Agent sidebar state
+  const [isInsightSidebarOpen, setIsInsightSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (highlightMeetingId) {
@@ -606,6 +655,78 @@ export default function TasksPage() {
                 {new Date(task.dueDate).toLocaleDateString()}
               </Typography>
             </Box>
+
+            {/* Meeting Context Links */}
+            {task.meetingId && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {/* View Meeting Link */}
+                <IconButton
+                  size="small"
+                  onClick={() => handleViewMeeting(task.meetingId!)}
+                  sx={{
+                    p: 0.5,
+                    position: 'relative',
+                    zIndex: 10,
+                    color: 'var(--brand-primary)',
+                    '&:hover': {
+                      backgroundColor: 'var(--brand-primary-100)',
+                      color: 'var(--brand-primary-600)'
+                    }
+                  }}
+                  title="View source meeting"
+                >
+                  <ExternalLink size={12} />
+                </IconButton>
+
+                {/* Transcript Context Tooltip */}
+                <Tooltip
+                  title={
+                    <Box sx={{ maxWidth: 300, p: 1 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 1 }}>
+                        Meeting Context:
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontSize: '0.7rem', lineHeight: 1.3 }}>
+                        {getTranscriptContext(task) || 'No context available'}
+                      </Typography>
+                    </Box>
+                  }
+                  arrow
+                  placement="top"
+                  sx={{
+                    '& .MuiTooltip-tooltip': {
+                      backgroundColor: 'var(--surface)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--grey-200)',
+                      boxShadow: 'var(--shadow-lg)',
+                      fontSize: '0.75rem',
+                    },
+                    '& .MuiTooltip-arrow': {
+                      color: 'var(--surface)',
+                    }
+                  }}
+                >
+                  <IconButton
+                    size="small"
+                    sx={{
+                      p: 0.5,
+                      position: 'relative',
+                      zIndex: 10,
+                      color: 'var(--brand-accent)',
+                      '&:hover': {
+                        backgroundColor: 'var(--brand-accent-100)',
+                        color: 'var(--brand-accent-600)'
+                      }
+                    }}
+                  >
+                    <MessageSquare size={12} />
+                  </IconButton>
+                </Tooltip>
+
+                <Typography variant="caption" sx={{ color: 'var(--text-tertiary)', fontSize: '0.65rem' }}>
+                  from {task.meetingTitle}
+                </Typography>
+              </Box>
+            )}
           </Box>
 
 
@@ -616,15 +737,22 @@ export default function TasksPage() {
   }
 
   return (
-    <MainContainer>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-        <Box className="icon-container-primary">
-          <CheckSquare size={24} color="var(--brand-primary)" />
+    <>
+      <MainContainer sx={{
+        paddingRight: isInsightSidebarOpen ? '420px' : '20px',
+        transition: 'padding-right var(--transition-normal)',
+        '@media (max-width: 768px)': {
+          paddingRight: isInsightSidebarOpen ? '0px' : '20px',
+        }
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+          <Box className="icon-container-primary">
+            <CheckSquare size={24} color="var(--brand-primary)" />
+          </Box>
+          <Typography variant="h3" sx={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+            Tasks
+          </Typography>
         </Box>
-        <Typography variant="h3" sx={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-          Tasks
-        </Typography>
-      </Box>
 
       {/* My Action Items */}
       <SectionCard>
@@ -779,5 +907,14 @@ export default function TasksPage() {
         </Box>
       </SectionCard>
     </MainContainer>
+
+    {/* Insight Agent Sidebar */}
+    <InsightAgentSidebar
+      meetings={[...mockMeetings, ...pastMeetings]}
+      tasks={tasks}
+      isOpen={isInsightSidebarOpen}
+      onToggle={() => setIsInsightSidebarOpen(!isInsightSidebarOpen)}
+    />
+  </>
   )
 }
