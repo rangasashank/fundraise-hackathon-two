@@ -4,13 +4,21 @@ import { styled } from '@mui/material/styles'
 import { Calendar as CalendarIcon, UserPlus, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MeetingDetailsContent } from '@/components/meeting-details-content'
 import { formatDate } from '@/lib/utils'
 import { type Meeting, mockMeetings, pastMeetings } from '@/lib/mock-data'
+import { MeetingDetailsContent } from '@/components/meeting-details-content'
 
 // Styled components
 const MainContainer = styled(Box)(() => ({
@@ -70,14 +78,20 @@ const PastMeetingCard = styled(Box)(() => ({
 export default function MeetingsPage() {
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false)
 
+  // Schedule meeting state
+  const [newMeeting, setNewMeeting] = useState({
+    title: '',
+    date: '',
+    time: '',
+    description: '',
+  })
 
   // Pagination and search state
   const [currentPage, setCurrentPage] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const meetingsPerPage = 4
-
-
 
   const upcomingMeetings = mockMeetings.filter((m) => m.date >= new Date())
 
@@ -92,7 +106,7 @@ export default function MeetingsPage() {
     const query = searchQuery.toLowerCase()
     return (
       meeting.title.toLowerCase().includes(query) ||
-      meeting.attendees.some(attendee => attendee.toLowerCase().includes(query)) ||
+      meeting.attendees.some((attendee) => attendee.toLowerCase().includes(query)) ||
       (meeting.notes && meeting.notes.toLowerCase().includes(query)) ||
       (meeting.description && meeting.description.toLowerCase().includes(query))
     )
@@ -104,33 +118,52 @@ export default function MeetingsPage() {
   const endIndex = startIndex + meetingsPerPage
   const paginatedMeetings = filteredCompletedMeetings.slice(startIndex, endIndex)
 
-
-
   const getTruncatedSummary = (notes?: string) => {
     if (!notes) return ''
-    // Get the first meaningful sentence or line from the notes
     const lines = notes.split('\n').filter((line) => line.trim() !== '')
-    if (lines.length === 0) return ''
-
-    // Find the first line that's not a header (doesn't end with ':')
     const firstContentLine = lines.find((line) => !line.trim().endsWith(':'))
-    if (!firstContentLine) return lines[0] // Fallback to first line
+    if (!firstContentLine) return lines[0]
+    const truncated =
+      firstContentLine.length > 80
+        ? firstContentLine.substring(0, 80).replace(/\s+\S*$/, '') + '...'
+        : firstContentLine
+    return truncated.replace(/^[-•]\s*/, '')
+  }
 
-    // Truncate to approximately 80 characters, breaking at word boundaries
-    const truncated = firstContentLine.length > 80
-      ? firstContentLine.substring(0, 80).replace(/\s+\S*$/, '') + '...'
-      : firstContentLine
+  // Form validation
+  const isFormComplete = () => {
+    const { title, date, time, description } = newMeeting
+    return !!(title && date && time && description)
+  }
 
-    return truncated.replace(/^[-•]\s*/, '') // Remove bullet points
+  // Calendar link generator
+  const createCalendarLinks = () => {
+    const { title, date, time, description } = newMeeting
+    if (!title || !date || !time) return null
+
+    const startDate = new Date(`${date}T${time}`)
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000)
+    const startStr = startDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+    const endStr = endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+
+    const googleLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+      title
+    )}&dates=${startStr}/${endStr}&details=${encodeURIComponent(description)}`
+
+    const outlookLink = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(
+      title
+    )}&body=${encodeURIComponent(description)}&startdt=${startDate.toISOString()}&enddt=${endDate.toISOString()}`
+
+    return { googleLink, outlookLink }
   }
 
   return (
     <MainContainer>
+      {/* Upcoming Meetings Section */}
       <UpcomingSection>
         <Container maxWidth="xl" sx={{ py: 3 }}>
-          {/* Action Buttons */}
           <Box sx={{ display: 'flex', gap: 1.5, mb: 3 }}>
-            <Button onClick={() => console.log('Schedule meeting')} variant="default" size="sm">
+            <Button onClick={() => setShowScheduleDialog(true)} variant="default" size="sm">
               <CalendarIcon size={16} style={{ marginRight: 8 }} />
               Schedule
             </Button>
@@ -143,6 +176,7 @@ export default function MeetingsPage() {
           <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525', mb: 2 }}>
             Upcoming Meetings
           </Typography>
+
           <ScrollArea style={{ width: '100%' }}>
             <Box sx={{ display: 'flex', gap: 2, pb: 2 }}>
               {upcomingMeetings.map((meeting) => (
@@ -151,51 +185,23 @@ export default function MeetingsPage() {
                   clickable
                   onClick={() => setSelectedMeeting(meeting)}
                 >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      justifyContent: 'space-between',
-                      mb: 1,
-                    }}
-                  >
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ fontWeight: 600, color: '#252525', flex: 1 }}
-                    >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#252525' }}>
                       {meeting.title}
                     </Typography>
-                    <Badge variant="outline" style={{ marginLeft: 8, flexShrink: 0 }}>
-                      {formatDate(meeting.date)}
-                    </Badge>
+                    <Badge variant="outline">{formatDate(meeting.date)}</Badge>
                   </Box>
                   <Typography variant="body2" sx={{ color: '#8e8e8e', mb: 2 }}>
                     {meeting.time}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <AvatarGroup
-                      max={3}
-                      sx={{ '& .MuiAvatar-root': { width: 28, height: 28, fontSize: '0.75rem' } }}
-                    >
-                      {meeting.attendees.slice(0, 3).map((attendee, i) => (
-                        <Avatar
-                          key={i}
-                          sx={{
-                            bgcolor: 'rgba(52, 52, 52, 0.2)',
-                            color: '#343434',
-                            border: '2px solid #ffffff',
-                          }}
-                        >
-                          {attendee.charAt(0)}
-                        </Avatar>
-                      ))}
-                    </AvatarGroup>
-                    {meeting.attendees.length > 3 && (
-                      <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
-                        +{meeting.attendees.length - 3} more
-                      </Typography>
-                    )}
-                  </Box>
+                  <AvatarGroup
+                    max={3}
+                    sx={{ '& .MuiAvatar-root': { width: 28, height: 28, fontSize: '0.75rem' } }}
+                  >
+                    {meeting.attendees.slice(0, 3).map((attendee, i) => (
+                      <Avatar key={i}>{attendee.charAt(0)}</Avatar>
+                    ))}
+                  </AvatarGroup>
                 </MeetingCard>
               ))}
             </Box>
@@ -203,6 +209,7 @@ export default function MeetingsPage() {
         </Container>
       </UpcomingSection>
 
+      {/* Past Meetings Section */}
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 4, mb: 3 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, color: '#252525' }}>
@@ -218,7 +225,7 @@ export default function MeetingsPage() {
                 left: 12,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#8e8e8e'
+                color: '#8e8e8e',
               }}
             />
             <Input
@@ -226,14 +233,14 @@ export default function MeetingsPage() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value)
-                setCurrentPage(0) // Reset to first page when searching
+                setCurrentPage(0)
               }}
               style={{
                 paddingLeft: 40,
                 backgroundColor: '#f7f7f7',
                 border: '1px solid #e8e8e8',
                 borderRadius: 10,
-                width: '100%'
+                width: '100%',
               }}
             />
           </Box>
@@ -244,7 +251,7 @@ export default function MeetingsPage() {
             display: 'grid',
             gap: 3,
             gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(2, 1fr)' },
-            mb: 4
+            mb: 4,
           }}
         >
           {paginatedMeetings.map((meeting) => {
@@ -293,47 +300,13 @@ export default function MeetingsPage() {
                           color: '#252525',
                           lineHeight: 1.4,
                           mt: 1,
-                          fontStyle: 'italic'
+                          fontStyle: 'italic',
                         }}
                       >
                         {truncatedSummary}
                       </Typography>
                     </Box>
                   )}
-
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      pt: 2,
-                      borderTop: '1px solid #e8e8e8',
-                    }}
-                  >
-                    <AvatarGroup
-                      max={4}
-                      sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: '0.75rem' } }}
-                    >
-                      {meeting.attendees.slice(0, 4).map((attendee, i) => (
-                        <Avatar
-                          key={i}
-                          title={attendee}
-                          sx={{
-                            bgcolor: 'rgba(52, 52, 52, 0.2)',
-                            color: '#343434',
-                            border: '2px solid #ffffff',
-                          }}
-                        >
-                          {attendee.charAt(0)}
-                        </Avatar>
-                      ))}
-                    </AvatarGroup>
-                    {meeting.attendees.length > 4 && (
-                      <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
-                        +{meeting.attendees.length - 4}
-                      </Typography>
-                    )}
-                  </Box>
                 </Box>
               </PastMeetingCard>
             )
@@ -342,7 +315,15 @@ export default function MeetingsPage() {
 
         {/* Pagination Controls */}
         {filteredCompletedMeetings.length > meetingsPerPage && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 4 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 2,
+              mt: 4,
+            }}
+          >
             <Button
               variant="outline"
               size="sm"
@@ -353,11 +334,9 @@ export default function MeetingsPage() {
               Previous
             </Button>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
-                Page {currentPage + 1} of {totalPages}
-              </Typography>
-            </Box>
+            <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
+              Page {currentPage + 1} of {totalPages}
+            </Typography>
 
             <Button
               variant="outline"
@@ -370,19 +349,123 @@ export default function MeetingsPage() {
             </Button>
           </Box>
         )}
-
-        {/* No results message */}
-        {filteredCompletedMeetings.length === 0 && searchQuery.trim() && (
-          <Box sx={{ textAlign: 'center', py: 6 }}>
-            <Typography variant="body1" sx={{ color: '#8e8e8e', mb: 1 }}>
-              No meetings found matching "{searchQuery}"
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
-              Try adjusting your search terms
-            </Typography>
-          </Box>
-        )}
       </Container>
+
+      {/* Schedule Meeting Dialog */}
+      <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogClose onClick={() => setShowScheduleDialog(false)} />
+            <DialogTitle>Schedule a Meeting</DialogTitle>
+            <DialogDescription>
+              Fill out the details below to schedule a new meeting or add it to your calendar.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Box sx={{ py: 2, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box>
+              <Label htmlFor="meeting-title">Title</Label>
+              <Input
+                id="meeting-title"
+                placeholder="Project sync-up"
+                value={newMeeting.title}
+                onChange={(e) => setNewMeeting({ ...newMeeting, title: e.target.value })}
+                style={{ marginTop: 8 }}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <Label htmlFor="meeting-date">Date</Label>
+                <Input
+                  id="meeting-date"
+                  type="date"
+                  value={newMeeting.date}
+                  onChange={(e) => setNewMeeting({ ...newMeeting, date: e.target.value })}
+                  style={{ marginTop: 8 }}
+                />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Label htmlFor="meeting-time">Time</Label>
+                <Input
+                  id="meeting-time"
+                  type="time"
+                  value={newMeeting.time}
+                  onChange={(e) => setNewMeeting({ ...newMeeting, time: e.target.value })}
+                  style={{ marginTop: 8 }}
+                />
+              </Box>
+            </Box>
+
+            <Box>
+              <Label htmlFor="meeting-description">Description</Label>
+              <Input
+                id="meeting-description"
+                placeholder="Add meeting notes or agenda"
+                value={newMeeting.description}
+                onChange={(e) => setNewMeeting({ ...newMeeting, description: e.target.value })}
+                style={{ marginTop: 8 }}
+              />
+            </Box>
+          </Box>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>
+              Cancel
+            </Button>
+
+            <Button
+              variant="outline"
+              disabled={!isFormComplete()}
+              onClick={() => {
+                const links = createCalendarLinks()
+                if (links) {
+                  window.open(links.googleLink, '_blank', 'noopener,noreferrer')
+                }
+              }}
+              style={{
+                opacity: isFormComplete() ? 1 : 0.5,
+                cursor: isFormComplete() ? 'pointer' : 'not-allowed'
+              }}
+            >
+              Add to Google Calendar
+            </Button>
+
+            <Button
+              variant="outline"
+              disabled={!isFormComplete()}
+              onClick={() => {
+                const links = createCalendarLinks()
+                if (links) {
+                  window.open(links.outlookLink, '_blank', 'noopener,noreferrer')
+                }
+              }}
+              style={{
+                opacity: isFormComplete() ? 1 : 0.5,
+                cursor: isFormComplete() ? 'pointer' : 'not-allowed'
+              }}
+            >
+              Add to Outlook
+            </Button>
+
+            <Button
+              disabled={!isFormComplete()}
+              onClick={() => {
+                if (isFormComplete()) {
+                  alert('Meeting scheduled internally!')
+                  setShowScheduleDialog(false)
+                }
+              }}
+              style={{
+                opacity: isFormComplete() ? 1 : 0.5,
+                cursor: isFormComplete() ? 'pointer' : 'not-allowed'
+              }}
+            >
+              Create Custom Meeting
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Meeting Details Dialog */}
       <Dialog
@@ -395,7 +478,7 @@ export default function MeetingsPage() {
           maxHeight: selectedMeeting?.hasTranscript ? '95vh' : '90vh',
           padding: selectedMeeting?.hasTranscript ? 0 : undefined
         }}>
-          <DialogHeader style={{ padding: '24px 24px 0 24px' }}>
+          <DialogHeader style={{ padding: selectedMeeting?.hasTranscript ? '24px 24px 0 24px' : undefined }}>
             <DialogClose onClick={() => setSelectedMeeting(null)} />
             <DialogTitle>{selectedMeeting?.title}</DialogTitle>
             <DialogDescription>
@@ -455,27 +538,18 @@ export default function MeetingsPage() {
             <DialogClose onClick={() => setShowInviteDialog(false)} />
             <DialogTitle>Invite Nylas Notetaker</DialogTitle>
             <DialogDescription>
-              Add the Nylas notetaker to your meeting for automatic transcription and
-              note-taking.
+              Add the Nylas notetaker to your meeting for automatic transcription and note-taking.
             </DialogDescription>
           </DialogHeader>
 
           <Box sx={{ py: 2, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box>
               <Label htmlFor="meeting-link">Meeting Link</Label>
-              <Input
-                id="meeting-link"
-                placeholder="https://zoom.us/j/123456789"
-                style={{ marginTop: 8 }}
-              />
+              <Input id="meeting-link" placeholder="https://zoom.us/j/123456789" style={{ marginTop: 8 }} />
             </Box>
             <Box>
               <Label htmlFor="notetaker-name">Notetaker Name</Label>
-              <Input
-                id="notetaker-name"
-                defaultValue="Nylas Notetaker"
-                style={{ marginTop: 8 }}
-              />
+              <Input id="notetaker-name" defaultValue="Nylas Notetaker" style={{ marginTop: 8 }} />
             </Box>
           </Box>
 
