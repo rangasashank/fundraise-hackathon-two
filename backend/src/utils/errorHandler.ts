@@ -31,7 +31,7 @@ export class AIProcessingError extends Error {
  */
 export const logAIError = (error: Error | AIProcessingError, context?: any): void => {
   const timestamp = new Date().toISOString();
-  const errorInfo = {
+  const errorInfo: any = {
     timestamp,
     message: error.message,
     name: error.name,
@@ -40,9 +40,9 @@ export const logAIError = (error: Error | AIProcessingError, context?: any): voi
   };
 
   if (error instanceof AIProcessingError) {
-    errorInfo['service'] = error.service;
-    errorInfo['code'] = error.code;
-    errorInfo['errorContext'] = error.context;
+    errorInfo.service = error.service;
+    errorInfo.code = error.code;
+    errorInfo.errorContext = error.context;
   }
 
   console.error('🚨 AI Processing Error:', JSON.stringify(errorInfo, null, 2));
@@ -204,7 +204,7 @@ export const retryAIOperation = async <T>(
   delay: number = 1000,
   operationName: string = 'AI Operation'
 ): Promise<T> => {
-  let lastError: Error;
+  let lastError: Error | undefined;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -231,9 +231,9 @@ export const retryAIOperation = async <T>(
   }
 
   throw new AIProcessingError(
-    `${operationName} failed after ${maxRetries} attempts: ${lastError.message}`,
+    `${operationName} failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`,
     'RetryMechanism',
     'MAX_RETRIES_EXCEEDED',
-    { maxRetries, lastError: lastError.message }
+    { maxRetries, lastError: lastError?.message || 'Unknown error' }
   );
 };

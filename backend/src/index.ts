@@ -7,6 +7,7 @@ import webhookRoutes from "./routes/webhook"
 import setupRoutes from "./routes/setup"
 import sseRoutes from "./routes/sse"
 import aiRoutes from "./routes/ai"
+import taskRoutes from "./routes/tasks"
 import { createWebhookManager } from "./services/webhookManager"
 
 dotenv.config()
@@ -96,6 +97,7 @@ app.use("/api/webhooks", webhookRoutes)
 app.use("/api/setup", setupRoutes)
 app.use("/api/sse", sseRoutes)
 app.use("/api/ai", aiRoutes)
+app.use("/api/tasks", taskRoutes)
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

@@ -6,6 +6,7 @@ import { Users, Zap, FileText, MessageSquare, User, Calendar, Clock } from 'luci
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { Meeting } from '@/lib/types'
+import * as api from '@/lib/api'
 
 interface MeetingDetailsContentProps {
   meeting: Meeting
@@ -80,6 +81,7 @@ export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
   const [showTranscript, setShowTranscript] = useState(false)
   const [selectedActionItems, setSelectedActionItems] = useState<Set<number>>(new Set())
   const [exportedItems, setExportedItems] = useState<Set<number>>(new Set())
+  const [exportError, setExportError] = useState<string | null>(null)
 
   // Parse action items from meeting data
   const parseActionItems = (): Array<{
@@ -151,20 +153,45 @@ export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
   }
 
   // Handle export selected items
-  const handleExportSelected = () => {
+  const handleExportSelected = async () => {
     if (selectedActionItems.size === 0) return
 
     const selectedItems = Array.from(selectedActionItems).map(index => actionItems[index])
     console.log('Exporting selected action items to Tasks page:', selectedItems)
 
-    // Add exported items to the exported set
-    setExportedItems(prev => new Set([...Array.from(prev), ...Array.from(selectedActionItems)]))
+    try {
+      setExportError(null)
 
-    // Clear selections after export
-    setSelectedActionItems(new Set())
+      // Create tasks for selected action items
+      const createPromises = selectedItems.map(item =>
+        api.createTask({
+          title: item.task,
+          description: `From meeting: ${meeting.title}`,
+          assignee: item.assignee,
+          dueDate: item.dueDate !== 'Not set' ? item.dueDate : undefined,
+          priority: item.priority,
+          status: 'todo',
+          meetingId: meeting.id,
+          transcriptId: meeting.transcriptId,
+        })
+      )
 
-    // Show success feedback (you could replace this with a toast notification)
-    alert(`Successfully exported ${selectedItems.length} action item(s) to Tasks page!`)
+      await Promise.all(createPromises)
+      console.log(`Successfully created ${selectedItems.length} tasks`)
+
+      // Add exported items to the exported set
+      setExportedItems(prev => new Set([...Array.from(prev), ...Array.from(selectedActionItems)]))
+
+      // Clear selections after export
+      setSelectedActionItems(new Set())
+
+      // Show success feedback
+      alert(`Successfully exported ${selectedItems.length} action item(s) to Tasks page!`)
+    } catch (err: any) {
+      console.error('Error exporting action items to tasks:', err)
+      setExportError(err.message || 'Failed to export action items')
+      alert(`Failed to export action items: ${err.message || 'Unknown error'}`)
+    }
   }
 
   return (

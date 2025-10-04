@@ -5,6 +5,7 @@ export interface INotetakerSession extends Document {
   meetingLink: string;
   meetingProvider: string;
   name: string;
+  meetingTitle?: string;
   joinTime?: number;
   state: string;
   meetingState?: string;
@@ -41,6 +42,9 @@ const NotetakerSessionSchema: Schema = new Schema(
     name: {
       type: String,
       default: 'Nylas Notetaker',
+    },
+    meetingTitle: {
+      type: String,
     },
     joinTime: {
       type: Number,

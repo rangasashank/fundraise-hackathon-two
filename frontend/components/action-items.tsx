@@ -118,22 +118,71 @@ export function ActionItems({ meeting }: ActionItemsProps) {
     }
   }
 
-  const handleExportToTasks = () => {
+  const handleExportToTasks = async () => {
     console.log('Exporting action items to tasks page:', actionItems)
     setExported(true)
-    setTimeout(() => setExported(false), 2000)
+
+    try {
+      // Create tasks for all action items
+      const createPromises = actionItems.map(item =>
+        api.createTask({
+          title: item.task,
+          description: `From meeting: ${meeting.title}`,
+          assignee: item.assignee,
+          dueDate: item.dueDate,
+          priority: item.priority,
+          status: 'todo',
+          meetingId: meeting.id,
+          transcriptId: meeting.transcriptId,
+        })
+      )
+
+      await Promise.all(createPromises)
+      console.log(`Successfully created ${actionItems.length} tasks`)
+
+      // Keep the success state for 2 seconds
+      setTimeout(() => setExported(false), 2000)
+    } catch (err: any) {
+      console.error('Error exporting action items to tasks:', err)
+      setError(err.message || 'Failed to export action items')
+      setExported(false)
+    }
   }
 
-  const handleExportSingleItem = (index: number, item: ActionItem) => {
+  const handleExportSingleItem = async (index: number, item: ActionItem) => {
     console.log('Exporting single action item to tasks page:', item)
     setExportedItems(prev => new Set(prev).add(index))
-    setTimeout(() => {
+
+    try {
+      await api.createTask({
+        title: item.task,
+        description: `From meeting: ${meeting.title}`,
+        assignee: item.assignee,
+        dueDate: item.dueDate,
+        priority: item.priority,
+        status: 'todo',
+        meetingId: meeting.id,
+        transcriptId: meeting.transcriptId,
+      })
+      console.log('Successfully created task')
+
+      // Keep the success state for 2 seconds
+      setTimeout(() => {
+        setExportedItems(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(index)
+          return newSet
+        })
+      }, 2000)
+    } catch (err: any) {
+      console.error('Error exporting action item to task:', err)
+      setError(err.message || 'Failed to export action item')
       setExportedItems(prev => {
         const newSet = new Set(prev)
         newSet.delete(index)
         return newSet
       })
-    }, 2000)
+    }
   }
 
   const handleReprocessWithAI = async () => {

@@ -6,6 +6,7 @@ export interface NotetakerSession {
   meetingLink: string
   meetingProvider: string
   name: string
+  meetingTitle?: string
   joinTime?: number
   state: 'scheduled' | 'connecting' | 'connected' | 'attending' | 'waiting_for_entry' | 'disconnected' | 'failed_entry' | 'failed' | 'cancelled' | 'completed'
   meetingState?: 'dispatched' | 'recording_active' | 'waiting_for_entry' | 'entry_denied' | 'no_response' | 'kicked' | 'no_participants' | 'no_meeting_activity' | 'bad_meeting_code' | 'api_request' | 'internal_error' | 'meeting_complete' | 'meeting_ended'
@@ -71,6 +72,23 @@ export interface Meeting {
   meetingState?: NotetakerSession['meetingState']
   meetingLink?: string
   meetingProvider?: string
+}
+
+
+// Task interface (backed by MongoDB Task model)
+export interface Task {
+  _id: string
+  title: string
+  description?: string
+  status: 'todo' | 'in-progress' | 'completed'
+  priority: 'low' | 'medium' | 'high'
+  assignee?: string
+  dueDate?: string
+  meetingId?: string
+  transcriptId?: string
+  completedAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 // API Response wrappers

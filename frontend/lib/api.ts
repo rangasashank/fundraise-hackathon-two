@@ -6,6 +6,7 @@ import type {
   Transcript,
   InviteNotetakerRequest,
   ProcessTranscriptRequest,
+  Task,
 } from './types'
 
 // Get API base URL from environment variable
@@ -40,12 +41,12 @@ apiClient.interceptors.response.use(
   },
   (error: AxiosError) => {
     console.error('[API] Response error:', error.response?.status, error.message)
-    
+
     // Handle specific error cases
     if (error.response) {
       const status = error.response.status
       const data = error.response.data as any
-      
+
       if (status === 401) {
         console.error('[API] Authentication error')
       } else if (status === 404) {
@@ -53,13 +54,13 @@ apiClient.interceptors.response.use(
       } else if (status === 500) {
         console.error('[API] Server error')
       }
-      
+
       // Return error message from backend if available
       if (data?.error) {
         return Promise.reject(new Error(data.error))
       }
     }
-    
+
     return Promise.reject(error)
   }
 )
@@ -164,6 +165,41 @@ export const reprocessTranscript = async (
   return response.data
 }
 
+// ============================================================================
+// Task API
+// =========================================================================
+
+export const getTasks = async (filters?: Partial<{ status: 'todo' | 'in-progress' | 'completed'; assignee: string; meetingId: string }>): Promise<ApiListResponse<Task>> => {
+  const response = await apiClient.get('/api/tasks', { params: filters })
+  return response.data
+}
+
+export const getTask = async (id: string): Promise<ApiResponse<Task>> => {
+  const response = await apiClient.get(`/api/tasks/${id}`)
+  return response.data
+}
+
+export const createTask = async (data: Partial<Task> & { title: string }): Promise<ApiResponse<Task>> => {
+  const response = await apiClient.post('/api/tasks', data)
+  return response.data
+}
+
+export const updateTask = async (id: string, data: Partial<Task>): Promise<ApiResponse<Task>> => {
+  const response = await apiClient.patch(`/api/tasks/${id}`, data)
+  return response.data
+}
+
+export const deleteTask = async (id: string): Promise<ApiResponse<Task>> => {
+  const response = await apiClient.delete(`/api/tasks/${id}`)
+  return response.data
+}
+
+export const toggleTaskCompletion = async (id: string): Promise<ApiResponse<Task>> => {
+  const response = await apiClient.patch(`/api/tasks/${id}/toggle`)
+  return response.data
+}
+
+
 /**
  * Get AI processing status for a transcript
  */
@@ -186,9 +222,9 @@ export const createSessionUpdatesSSE = (
   onError?: (error: Event) => void
 ): EventSource => {
   const eventSource = new EventSource(`${API_BASE_URL}/api/sse/sessions`)
-  
+
   eventSource.onmessage = onMessage
-  
+
   if (onError) {
     eventSource.onerror = onError
   } else {
@@ -196,7 +232,7 @@ export const createSessionUpdatesSSE = (
       console.error('[SSE] Connection error:', error)
     }
   }
-  
+
   return eventSource
 }
 

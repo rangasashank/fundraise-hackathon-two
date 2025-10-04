@@ -1,15 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { useRouter } from 'next/router'
-import { Box, Typography, Container, Checkbox, Collapse, IconButton, MenuItem, Select, FormControl, CircularProgress, Alert } from '@mui/material'
+import { Box, Typography, Container, Checkbox, IconButton, MenuItem, Select, FormControl, CircularProgress, Alert } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { Calendar, CheckCircle2, Circle, Clock, User, ChevronDown, ChevronRight, Trash2, CheckSquare, Users, Video, RefreshCw } from 'lucide-react'
+import { Calendar, CheckCircle2, Circle, Clock, User, Trash2, CheckSquare, Users, RefreshCw } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { formatDate } from '@/lib/utils'
-import { type Meeting } from '@/lib/types'
 import * as api from '@/lib/api'
-import { transformToMeetings } from '@/lib/dataTransformers'
 
 interface Task {
   id: string
@@ -35,9 +31,6 @@ const getPriorityValue = (priority: 'high' | 'medium' | 'low'): number => {
   }
 }
 
-const sortTasksByPriority = (tasks: Task[]): Task[] => {
-  return [...tasks].sort((a, b) => getPriorityValue(a.priority) - getPriorityValue(b.priority))
-}
 
 // Styled components
 const MainContainer = styled(Container)(() => ({
@@ -135,190 +128,106 @@ const TaskCard = styled(Card)<{ highlight?: boolean }>(({ highlight }) => ({
   },
 }))
 
-const MeetingHeader = styled(Box)<{ expanded?: boolean }>(({ expanded }) => ({
-  padding: 'var(--space-4) var(--space-5)',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  background: expanded
-    ? 'linear-gradient(135deg, var(--surface-alt) 0%, var(--brand-primary-50) 100%)'
-    : 'transparent',
-  borderBottom: expanded ? '1px solid var(--grey-200)' : 'none',
-  transition: 'all var(--transition-fast)',
-  borderRadius: 'var(--radius-md)',
-  position: 'relative',
-  overflow: 'hidden',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: '3px',
-    background: 'linear-gradient(180deg, var(--brand-primary) 0%, var(--brand-accent) 100%)',
-    opacity: expanded ? 1 : 0,
-    transition: 'opacity var(--transition-fast)',
-  },
-  '&:hover': {
-    background: 'linear-gradient(135deg, var(--surface-hover) 0%, var(--brand-primary-100) 100%)',
-    transform: 'translateX(4px)',
-    '&::before': {
-      opacity: 0.7,
-    },
-  },
-}))
-
-function generateTasksFromMeetings(meetings: Meeting[]): Task[] {
-  const tasks: Task[] = []
-
-  meetings.forEach((meeting) => {
-    // Use action items from backend if available
-    if (meeting.actionItems && meeting.actionItems.length > 0) {
-      meeting.actionItems.forEach((item, index) => {
-        // Parse action item string to extract task, assignee, and due date
-        // Format: "Task description (Assignee - Due Date)" or just "Task description"
-        const match = item.match(/^(.+?)\s*\(([^)]+?)(?:\s*-\s*([^)]+))?\)/)
-
-        let taskTitle: string
-        let assignee: string
-        let dueDate: string
-
-        if (match) {
-          const [, task, assigneeStr, dueDateStr] = match
-          taskTitle = task.trim()
-          assignee = assigneeStr.trim()
-          dueDate = dueDateStr?.trim() || new Date(meeting.date.getTime() + 7 * 86400000).toISOString().split('T')[0]
-        } else {
-          // Fallback: use the whole string as task
-          taskTitle = item
-          assignee = meeting.attendees[index % meeting.attendees.length] || 'Unassigned'
-          dueDate = new Date(meeting.date.getTime() + 7 * 86400000).toISOString().split('T')[0]
-        }
-
-        tasks.push({
-          id: `${meeting.id}-task-${index}`,
-          title: taskTitle,
-          description: `From ${meeting.title}`,
-          assignee,
-          dueDate,
-          priority: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
-          status: meeting.state === 'completed' && meeting.date < new Date(Date.now() - 86400000 * 7)
-            ? 'completed'
-            : index % 3 === 0
-              ? 'in-progress'
-              : 'todo',
-          meetingId: meeting.id,
-          meetingTitle: meeting.title,
-        })
-      })
-    }
-  })
-
-  return tasks
-}
 
 export default function TasksPage() {
   const router = useRouter()
-  const highlightMeetingId = router.query.meeting as string
 
   // Data state
-  const [meetings, setMeetings] = useState<Meeting[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
 
-  const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(
-    new Set(highlightMeetingId ? [highlightMeetingId] : [])
-  )
-
-  // State for enhanced task management
+  // Drag and drop state
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
   const [dropTargetId, setDropTargetId] = useState<string | null>(null)
 
-  // Fetch meetings and generate tasks
-  const fetchMeetingsAndTasks = async () => {
+  // Fetch tasks from backend
+  const fetchTasks = useCallback(async () => {
     try {
       setError(null)
-      const [sessionsResponse, transcriptsResponse] = await Promise.all([
-        api.getSessions(),
-        api.getTranscripts(),
-      ])
-
-      if (sessionsResponse.success && transcriptsResponse.success) {
-        const fetchedMeetings = transformToMeetings(sessionsResponse.data, transcriptsResponse.data)
-        setMeetings(fetchedMeetings)
-
-        // Generate tasks from meetings with action items
-        const generatedTasks = generateTasksFromMeetings(fetchedMeetings)
-        setTasks(generatedTasks)
+      const response = await api.getTasks()
+      if (response.success) {
+        const mapped = response.data.map((t: any) => ({
+          id: t._id,
+          title: t.title,
+          description: t.description || 'Task',
+          assignee: t.assignee || 'Unassigned',
+          dueDate: t.dueDate || new Date().toISOString(),
+          priority: t.priority,
+          status: t.status,
+          meetingId: t.meetingId,
+          meetingTitle: undefined,
+        }))
+        setTasks(mapped)
       } else {
-        throw new Error('Failed to fetch meetings data')
+        throw new Error('Failed to fetch tasks')
       }
     } catch (err: any) {
-      console.error('Error fetching meetings and tasks:', err)
+      console.error('Error fetching tasks:', err)
       setError(err.message || 'Failed to load tasks. Please try again.')
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [])
 
   // Initial data fetch
   useEffect(() => {
-    fetchMeetingsAndTasks()
-  }, [])
+    fetchTasks()
+  }, [fetchTasks])
 
   // Refresh handler
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setRefreshing(true)
-    fetchMeetingsAndTasks()
-  }
+    fetchTasks()
+  }, [fetchTasks])
 
-  useEffect(() => {
-    if (highlightMeetingId) {
-      setTimeout(() => {
-        const element = document.getElementById(`meeting-${highlightMeetingId}`)
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }
-      }, 100)
+
+  // Function to toggle task completion status (optimistic)
+  const handleTaskToggle = useCallback(async (taskId: string) => {
+    // Optimistic toggle
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: t.status === 'completed' ? 'todo' : 'completed' } : t))
+    try {
+      await api.toggleTaskCompletion(taskId)
+    } catch (err) {
+      console.error('Failed to toggle task', err)
+      // Roll back
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: t.status === 'completed' ? 'todo' : 'completed' } : t))
+      setError('Failed to update task. Please try again.')
     }
-  }, [highlightMeetingId])
+  }, [])
 
+  // Function to delete a task (optimistic)
+  const handleDeleteTask = useCallback(async (taskId: string) => {
+    const deleted = tasks.find(t => t.id === taskId)
+    setTasks(prev => prev.filter(t => t.id !== taskId))
+    try {
+      await api.deleteTask(taskId)
+    } catch (err) {
+      console.error('Failed to delete task', err)
+      // Roll back by re-adding task at the start to minimize reflow
+      if (deleted) setTasks(prev => [deleted, ...prev])
+      setError('Failed to delete task. Please try again.')
+    }
+  }, [tasks])
 
-
-  // Function to toggle task completion status
-  const handleTaskToggle = (taskId: string) => {
-    // Update task status immediately
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === taskId
-          ? { ...task, status: task.status === 'completed' ? 'todo' : 'completed' }
-          : task
-      )
-    )
-  }
-
-  // Function to delete a task
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId))
-  }
-
-  // Function to change task status (for in-progress)
-  const handleStatusChange = (taskId: string, newStatus: 'todo' | 'in-progress' | 'completed') => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === taskId
-          ? { ...task, status: newStatus }
-          : task
-      )
-    )
-  }
+  // Function to change task status (optimistic)
+  const handleStatusChange = useCallback(async (taskId: string, newStatus: 'todo' | 'in-progress' | 'completed') => {
+    const prevTask = tasks.find(t => t.id === taskId)
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t))
+    try {
+      await api.updateTask(taskId, { status: newStatus })
+    } catch (err) {
+      console.error('Failed to change task status', err)
+      // Roll back
+      if (prevTask) setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: prevTask.status } : t))
+      setError('Failed to update task. Please try again.')
+    }
+  }, [tasks])
 
   // Drag and Drop handlers
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+  const handleDragStart = useCallback((e: React.DragEvent, taskId: string) => {
     setDraggedTaskId(taskId)
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', taskId)
@@ -327,9 +236,9 @@ export default function TasksPage() {
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '0.5'
     }
-  }
+  }, [])
 
-  const handleDragEnd = (e: React.DragEvent) => {
+  const handleDragEnd = useCallback((e: React.DragEvent) => {
     setDraggedTaskId(null)
     setDropTargetId(null)
 
@@ -337,55 +246,59 @@ export default function TasksPage() {
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '1'
     }
-  }
+  }, [])
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-  }
+  }, [])
 
-  const handleDragEnter = (e: React.DragEvent, targetTaskId: string) => {
+  const handleDragEnter = useCallback((e: React.DragEvent, targetTaskId: string) => {
     e.preventDefault()
-    if (draggedTaskId && draggedTaskId !== targetTaskId) {
-      setDropTargetId(targetTaskId)
-    }
-  }
+    setDropTargetId(prevId => {
+      // Only update if different to avoid unnecessary re-renders
+      if (draggedTaskId && draggedTaskId !== targetTaskId && prevId !== targetTaskId) {
+        return targetTaskId
+      }
+      return prevId
+    })
+  }, [draggedTaskId])
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     // Only clear drop target if we're leaving the card entirely
     if (e.currentTarget === e.target) {
       setDropTargetId(null)
     }
-  }
+  }, [])
 
-  const handleDrop = (e: React.DragEvent, targetTaskId: string) => {
+  const handleDrop = useCallback((e: React.DragEvent, targetTaskId: string) => {
     e.preventDefault()
 
     if (!draggedTaskId || draggedTaskId === targetTaskId) {
       return
     }
 
-    const draggedTask = tasks.find(t => t.id === draggedTaskId)
-    const targetTask = tasks.find(t => t.id === targetTaskId)
-
-    if (!draggedTask || !targetTask) {
-      return
-    }
-
-    // Only allow reordering within the same section
-    const sameSection = (
-      (draggedTask.assignee === CURRENT_USER && targetTask.assignee === CURRENT_USER) ||
-      (draggedTask.assignee !== CURRENT_USER && targetTask.assignee !== CURRENT_USER) ||
-      (draggedTask.description.includes('From') && targetTask.description.includes('From') &&
-       draggedTask.description === targetTask.description)
-    )
-
-    if (!sameSection) {
-      return
-    }
-
     // Reorder tasks
     setTasks(prevTasks => {
+      const draggedTask = prevTasks.find(t => t.id === draggedTaskId)
+      const targetTask = prevTasks.find(t => t.id === targetTaskId)
+
+      if (!draggedTask || !targetTask) {
+        return prevTasks
+      }
+
+      // Only allow reordering within the same section
+      const sameSection = (
+        (draggedTask.assignee === CURRENT_USER && targetTask.assignee === CURRENT_USER) ||
+        (draggedTask.assignee !== CURRENT_USER && targetTask.assignee !== CURRENT_USER) ||
+        (draggedTask.description.includes('From') && targetTask.description.includes('From') &&
+         draggedTask.description === targetTask.description)
+      )
+
+      if (!sameSection) {
+        return prevTasks
+      }
+
       const newTasks = [...prevTasks]
       const draggedIndex = newTasks.findIndex(t => t.id === draggedTaskId)
       const targetIndex = newTasks.findIndex(t => t.id === targetTaskId)
@@ -403,131 +316,100 @@ export default function TasksPage() {
 
     setDraggedTaskId(null)
     setDropTargetId(null)
-  }
+  }, [draggedTaskId])
 
   // Keyboard reordering handlers
-  const handleKeyDown = (e: React.KeyboardEvent, taskId: string) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, taskId: string) => {
     if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       e.preventDefault()
 
-      const taskIndex = tasks.findIndex(t => t.id === taskId)
-      if (taskIndex === -1) return
-
-      const direction = e.key === 'ArrowUp' ? -1 : 1
-      const newIndex = taskIndex + direction
-
-      if (newIndex < 0 || newIndex >= tasks.length) return
-
-      // Check if we're moving within the same section
-      const currentTask = tasks[taskIndex]
-      const targetTask = tasks[newIndex]
-
-      const sameSection = (
-        (currentTask.assignee === CURRENT_USER && targetTask.assignee === CURRENT_USER) ||
-        (currentTask.assignee !== CURRENT_USER && targetTask.assignee !== CURRENT_USER) ||
-        (currentTask.description.includes('From') && targetTask.description.includes('From') &&
-         currentTask.description === targetTask.description)
-      )
-
-      if (!sameSection) return
-
       setTasks(prevTasks => {
+        const taskIndex = prevTasks.findIndex(t => t.id === taskId)
+        if (taskIndex === -1) return prevTasks
+
+        const direction = e.key === 'ArrowUp' ? -1 : 1
+        const newIndex = taskIndex + direction
+
+        if (newIndex < 0 || newIndex >= prevTasks.length) return prevTasks
+
+        // Check if we're moving within the same section
+        const currentTask = prevTasks[taskIndex]
+        const targetTask = prevTasks[newIndex]
+
+        const sameSection = (
+          (currentTask.assignee === CURRENT_USER && targetTask.assignee === CURRENT_USER) ||
+          (currentTask.assignee !== CURRENT_USER && targetTask.assignee !== CURRENT_USER) ||
+          (currentTask.description.includes('From') && targetTask.description.includes('From') &&
+           currentTask.description === targetTask.description)
+        )
+
+        if (!sameSection) return prevTasks
+
         const newTasks = [...prevTasks]
         const [movedTask] = newTasks.splice(taskIndex, 1)
         newTasks.splice(newIndex, 0, movedTask)
         return newTasks
       })
     }
-  }
+  }, [])
 
-  // Keep tasks in their original order - no automatic reordering
-  const myTasks = tasks.filter((t) => t.assignee === CURRENT_USER)
-  const teamTasks = tasks.filter((t) => t.assignee !== CURRENT_USER)
+  // Memoize filtered tasks to avoid recalculating on every render
+  const myTasks = useMemo(() =>
+    tasks.filter((t) => t.assignee === CURRENT_USER),
+    [tasks]
+  )
 
-  const meetingGroups = new Map<string, { meeting: Meeting; tasks: Task[] }>()
+  const teamTasks = useMemo(() =>
+    tasks.filter((t) => t.assignee !== CURRENT_USER),
+    [tasks]
+  )
 
-  tasks.forEach((task) => {
-    if (task.meetingId) {
-      const meeting = meetings.find((m) => m.id === task.meetingId)
-      if (meeting) {
-        if (!meetingGroups.has(task.meetingId)) {
-          meetingGroups.set(task.meetingId, { meeting, tasks: [] })
-        }
-        meetingGroups.get(task.meetingId)!.tasks.push(task)
-      }
-    }
-  })
 
-  const sortedMeetingGroups = Array.from(meetingGroups.values())
-    .map(group => ({
-      ...group,
-      tasks: group.tasks // Keep original task order within meetings
-    }))
-    .sort((a, b) => b.meeting.date.getTime() - a.meeting.date.getTime())
 
-  const toggleMeeting = (meetingId: string) => {
-    setExpandedMeetings((prev) => {
-      const next = new Set(prev)
-      if (next.has(meetingId)) {
-        next.delete(meetingId)
-      } else {
-        next.add(meetingId)
-      }
-      return next
-    })
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'destructive'
-      case 'medium':
-        return 'secondary'
-      case 'low':
-        return 'outline'
-      default:
-        return 'secondary'
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle2 size={16} color="var(--brand-primary)" />
-      case 'in-progress':
-        return <Clock size={16} color="var(--brand-accent)" />
-      default:
-        return <Circle size={16} color="var(--grey-400)" />
-    }
-  }
-
-  const TaskCardComponent = ({
+  // Memoized TaskCardComponent to prevent unnecessary re-renders
+  const TaskCardComponent = memo(({
     task,
     highlight = false,
     onToggle,
     onDelete,
     onStatusChange,
+    isDragging,
+    isDropTarget,
+    onDragStart,
+    onDragEnd,
+    onDragOver,
+    onDragEnter,
+    onDragLeave,
+    onDrop,
+    onKeyDown,
   }: {
     task: Task;
     highlight?: boolean;
     onToggle?: (taskId: string) => void;
     onDelete?: (taskId: string) => void;
     onStatusChange?: (taskId: string, status: 'todo' | 'in-progress' | 'completed') => void;
+    isDragging: boolean;
+    isDropTarget: boolean;
+    onDragStart: (e: React.DragEvent, taskId: string) => void;
+    onDragEnd: (e: React.DragEvent) => void;
+    onDragOver: (e: React.DragEvent) => void;
+    onDragEnter: (e: React.DragEvent, taskId: string) => void;
+    onDragLeave: (e: React.DragEvent) => void;
+    onDrop: (e: React.DragEvent, taskId: string) => void;
+    onKeyDown: (e: React.KeyboardEvent, taskId: string) => void;
   }) => {
-    const isDragging = draggedTaskId === task.id
-    const isDropTarget = dropTargetId === task.id
 
     return (
       <TaskCard
         draggable
         highlight={highlight}
-        onDragStart={(e) => handleDragStart(e, task.id)}
-        onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
-        onDragEnter={(e) => handleDragEnter(e, task.id)}
-        onDragLeave={handleDragLeave}
-        onDrop={(e) => handleDrop(e, task.id)}
-        onKeyDown={(e) => handleKeyDown(e, task.id)}
+        onDragStart={(e) => onDragStart(e, task.id)}
+        onDragEnd={onDragEnd}
+        onDragOver={onDragOver}
+        onDragEnter={(e) => onDragEnter(e, task.id)}
+        onDragLeave={onDragLeave}
+        onDrop={(e) => onDrop(e, task.id)}
+        onKeyDown={(e) => onKeyDown(e, task.id)}
         tabIndex={0}
         role="button"
         aria-grabbed={isDragging}
@@ -662,7 +544,7 @@ export default function TasksPage() {
       </Box>
     </TaskCard>
     )
-  }
+  })
 
   return (
     <MainContainer>
@@ -745,6 +627,15 @@ export default function TasksPage() {
                 onToggle={handleTaskToggle}
                 onDelete={handleDeleteTask}
                 onStatusChange={handleStatusChange}
+                isDragging={draggedTaskId === task.id}
+                isDropTarget={dropTargetId === task.id}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onKeyDown={handleKeyDown}
               />
             ))
           )}
@@ -784,86 +675,22 @@ export default function TasksPage() {
                 onToggle={handleTaskToggle}
                 onDelete={handleDeleteTask}
                 onStatusChange={handleStatusChange}
+                isDragging={draggedTaskId === task.id}
+                isDropTarget={dropTargetId === task.id}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onKeyDown={handleKeyDown}
               />
             ))
           )}
         </CardContent>
       </SectionCard>
 
-      {/* Meeting History */}
-      <SectionCard>
-        <SectionHeader>
-          <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525' }}>
-            Meeting History ({sortedMeetingGroups.length})
-          </Typography>
-        </SectionHeader>
-        <Box>
-          {sortedMeetingGroups.map(({ meeting, tasks: meetingTasks }) => {
-            const isExpanded = expandedMeetings.has(meeting.id)
-            const isHighlighted = highlightMeetingId === meeting.id
 
-            return (
-              <Box
-                key={meeting.id}
-                id={`meeting-${meeting.id}`}
-                sx={{
-                  border: isHighlighted ? '2px solid #343434' : 'none',
-                  borderRadius: isHighlighted ? '10px' : 0,
-                  margin: isHighlighted ? '8px' : 0,
-                }}
-              >
-                <MeetingHeader
-                  expanded={isExpanded}
-                  onClick={() => toggleMeeting(meeting.id)}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <IconButton size="small" sx={{ p: 0 }}>
-                      {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                    </IconButton>
-                    <Box className="icon-container-primary" sx={{ minWidth: 'auto', p: 1 }}>
-                      <Video size={16} color="var(--brand-primary)" />
-                    </Box>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {meeting.title}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
-                        {formatDate(meeting.date)} • {meetingTasks.length} tasks
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Badge variant="secondary">
-                    {formatDate(meeting.date)}
-                  </Badge>
-                </MeetingHeader>
-
-                <Collapse in={isExpanded}>
-                  <Box sx={{ p: 2, backgroundColor: '#ffffff' }}>
-                    {meetingTasks.map((task) => (
-                      <TaskCardComponent
-                        key={task.id}
-                        task={task}
-                        highlight={isHighlighted}
-                        onToggle={handleTaskToggle}
-                        onDelete={handleDeleteTask}
-                        onStatusChange={handleStatusChange}
-                      />
-                    ))}
-                  </Box>
-                </Collapse>
-              </Box>
-            )
-          })}
-
-          {sortedMeetingGroups.length === 0 && (
-            <Box sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
-                No meetings with action items found.
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      </SectionCard>
       </>
       )}
     </MainContainer>

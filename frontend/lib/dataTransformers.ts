@@ -7,13 +7,19 @@ export const transformToMeeting = (
   session: NotetakerSession,
   transcript?: Transcript
 ): Meeting => {
-  // Extract meeting title from meeting link or use provider name
+  // Extract meeting title from meetingTitle field or fallback to other sources
   const getMeetingTitle = (): string => {
+    // First priority: use meetingTitle if available
+    if (session.meetingTitle) {
+      return session.meetingTitle
+    }
+
+    // Second priority: use name if it's not the default
     if (session.name && session.name !== 'Nylas Notetaker') {
       return session.name
     }
-    
-    // Try to extract from meeting link
+
+    // Fallback: extract from meeting link
     const link = session.meetingLink
     if (link.includes('zoom.us')) {
       return 'Zoom Meeting'
@@ -22,7 +28,7 @@ export const transformToMeeting = (
     } else if (link.includes('teams.microsoft.com')) {
       return 'Microsoft Teams Meeting'
     }
-    
+
     return `${session.meetingProvider} Meeting`
   }
 

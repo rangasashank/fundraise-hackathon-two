@@ -1,7 +1,62 @@
 import AIAgentsService from './aiAgentsService';
 import Transcript from '../models/Transcript';
+import Task from '../models/Task';
 import { TranscriptProcessingResult } from '../types/aiAgents';
 import { logAIError, logAISuccess, logAIInfo, logAIWarning } from '../utils/errorHandler';
+
+
+// Helper: create Task documents from action items
+async function createTasksFromActionItems(transcript: any, actionItems: string[]) {
+  try {
+    const parse = (item: string) => {
+      const match = item.match(/^(.+?)\s*\(([^)]+?)(?:\s*-\s*([^)]+))?\)\s*$/)
+      let title = item.trim()
+      let assignee: string | undefined
+      let dueDate: Date | undefined
+      if (match && match[1]) {
+        title = match[1].trim()
+        assignee = match[2]?.trim()
+        const dueStr = match[3]?.trim()
+        if (dueStr) {
+          try {
+            const parsed = new Date(dueStr)
+            // Only set dueDate if it's a valid date
+            if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 1970) {
+              dueDate = parsed
+            }
+          } catch (e) {
+            // Invalid date string, skip it
+          }
+        }
+      }
+      return { title, assignee, dueDate }
+    }
+
+    const docs = actionItems.map((text, idx) => {
+      const { title, assignee, dueDate } = parse(text)
+      return {
+        title,
+        description: `From transcript ${transcript._id}`,
+        status: idx % 3 === 0 ? 'in-progress' : 'todo',
+        priority: idx === 0 ? 'high' : idx === 1 ? 'medium' : 'low',
+        assignee,
+        dueDate,
+        meetingId: transcript.sessionId,
+        transcriptId: transcript._id,
+      }
+    })
+
+    if (docs.length > 0) {
+      await Task.insertMany(docs)
+      logAISuccess('Created tasks from action items', {
+        transcriptId: String(transcript._id),
+        count: docs.length,
+      })
+    }
+  } catch (error) {
+    logAIError(error as any, { operation: 'createTasksFromActionItems', transcriptId: String(transcript._id) })
+  }
+}
 
 /**
  * Transcript Processing Service
@@ -112,6 +167,10 @@ class TranscriptProcessingService {
           hasSummary: !!transcript.summaryText,
           actionItemsCount: transcript.actionItems?.length || 0
         });
+        // Create Task documents for extracted action items (once)
+        if (result.actionItems.success && result.actionItems.actionItems.length > 0) {
+          await createTasksFromActionItems(transcript, result.actionItems.actionItems)
+        }
       }
 
       return result;
@@ -130,7 +189,7 @@ class TranscriptProcessingService {
           await transcript.save();
           logAIInfo('Saved error message to transcript', { transcriptId });
         }
-      } catch (saveError) {
+      } catch (saveError: any) {
         logAIError(saveError, {
           operation: 'saveErrorMessage',
           transcriptId
@@ -139,13 +198,19 @@ class TranscriptProcessingService {
 
       return null;
     }
-  }
+
+	  }
+
+
+  /**
+   * Create Task documents from action items and link to meeting/transcript
+   */
 
   /**
    * Process transcript with specific AI agent only
    */
   async processWithSpecificAgent(
-    transcriptId: string, 
+    transcriptId: string,
     agentType: 'summary' | 'actionItems'
   ): Promise<{ success: boolean; result?: any; error?: string }> {
     try {
@@ -166,6 +231,9 @@ class TranscriptProcessingService {
         if (result.success) {
           transcript.actionItems = result.actionItems;
           await transcript.save();
+          if (Array.isArray(result.actionItems) && result.actionItems.length > 0) {
+            await createTasksFromActionItems(transcript, result.actionItems)
+          }
         }
         return { success: result.success, result: result.actionItems, error: result.error };
       }
