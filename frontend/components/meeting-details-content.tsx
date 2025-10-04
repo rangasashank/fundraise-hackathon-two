@@ -329,7 +329,7 @@ export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
                 }}>
-                  AI-Generated Action Items
+                  Action Items
                 </SectionTitle>
                 <Checkbox
                   checked={selectedActionItems.size === actionItems.length && actionItems.length > 0}

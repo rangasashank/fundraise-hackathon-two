@@ -7,6 +7,8 @@ import type {
   InviteNotetakerRequest,
   ProcessTranscriptRequest,
   Task,
+  Insight,
+  Solution,
 } from './types'
 
 // Get API base URL from environment variable
@@ -260,5 +262,33 @@ export const getApiBaseUrl = (): string => {
   return API_BASE_URL
 }
 
-export default apiClient
+// ============================================================================
+// Insights API
+// ============================================================================
 
+export const analyzeAllMeetings = async (): Promise<ApiResponse<Insight[]>> => {
+  const response = await apiClient.post('/api/insights/analyze-all')
+  return response.data
+}
+
+export const getInsights = async (): Promise<ApiListResponse<Insight>> => {
+  const response = await apiClient.get('/api/insights')
+  return response.data
+}
+
+export const getInsight = async (id: string): Promise<ApiResponse<{ insight: Insight; solutions: Solution[] }>> => {
+  const response = await apiClient.get(`/api/insights/${id}`)
+  return response.data
+}
+
+export const brainstormSolutions = async (issueId: string, regenerate = false): Promise<ApiResponse<Solution[]>> => {
+  const response = await apiClient.post(`/api/insights/${issueId}/brainstorm`, { regenerate })
+  return response.data
+}
+
+export const deleteInsight = async (id: string): Promise<ApiResponse<void>> => {
+  const response = await apiClient.delete(`/api/insights/${id}`)
+  return response.data
+}
+
+export default apiClient

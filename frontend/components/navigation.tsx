@@ -69,6 +69,7 @@ export function Navigation() {
   const navItems = [
     { href: '/meetings', label: 'Meetings' },
     { href: '/tasks', label: 'Tasks' },
+    { href: '/insights', label: 'Insights' },
   ]
 
   return (

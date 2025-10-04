@@ -193,7 +193,7 @@ export default function MeetingsPage() {
       // Remove bullet points and clean up
       content = content
         .split('\n')
-        .map(line => line.trim().replace(/^[-•*]\s*/, ''))
+        .map(line => line.trim().replace(/^[-•\*]\s*/, ''))
         .filter(line => line.length > 0)
         .join(', ')
 
@@ -214,7 +214,7 @@ export default function MeetingsPage() {
       firstContentLine.length > 80
         ? firstContentLine.substring(0, 80).replace(/\s+\S*$/, '') + '...'
         : firstContentLine
-    return truncated.replace(/^[-•]\s*/, '')
+    return truncated.replace(/^[-•\*]\s*/, '')
   }
 
   // Form validation

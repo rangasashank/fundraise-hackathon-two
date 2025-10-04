@@ -3,6 +3,7 @@ import Transcript from '../models/Transcript';
 import Task from '../models/Task';
 import { TranscriptProcessingResult } from '../types/aiAgents';
 import { logAIError, logAISuccess, logAIInfo, logAIWarning } from '../utils/errorHandler';
+import InsightAgentService from './insightAgentService';
 
 
 // Helper: create Task documents from action items
@@ -170,6 +171,16 @@ class TranscriptProcessingService {
         // Create Task documents for extracted action items (once)
         if (result.actionItems.success && result.actionItems.actionItems.length > 0) {
           await createTasksFromActionItems(transcript, result.actionItems.actionItems)
+        }
+
+        // Process new meeting for insights (incremental update)
+        try {
+          const insightAgent = new InsightAgentService()
+          await insightAgent.processNewMeeting(transcriptId)
+          logAIInfo('Processed new meeting for insights', { transcriptId })
+        } catch (insightError: any) {
+          logAIError(insightError, { operation: 'processNewMeetingForInsights', transcriptId })
+          // Don't fail the entire process if insight processing fails
         }
       }
 

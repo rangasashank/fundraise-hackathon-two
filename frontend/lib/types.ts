@@ -137,3 +137,28 @@ export interface TranscriptUpdateEvent {
   timestamp: string
 }
 
+// Insight interface (backed by MongoDB Insight model)
+export interface Insight {
+  _id: string
+  issueTitle: string
+  score: number
+  rationale: string
+  occurrenceCount: number
+  firstSeenDate: string
+  lastSeenDate: string
+  relatedMeetingIds: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+// Solution interface (backed by MongoDB Solution model)
+export interface Solution {
+  _id: string
+  insightId: string
+  title: string
+  description: string
+  expectedImpact: string
+  nextSteps: string[]
+  createdAt: string
+  updatedAt: string
+}
