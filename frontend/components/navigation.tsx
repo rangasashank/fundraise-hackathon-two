@@ -39,7 +39,7 @@ export function Navigation() {
   const pathname = router.pathname
 
   const navItems = [
-    { href: '/meetings', label: 'Meetings' },
+    { href: '', label: 'Meetings' },
     { href: '/tasks', label: 'Tasks' },
     { href: '/notetaker', label: 'Notetaker' },
   ]
