@@ -1,35 +1,29 @@
 import React, { useState } from 'react'
 import { Box, Typography, Container, Avatar, AvatarGroup } from '@mui/material'
 import { styled } from '@mui/material/styles'
+import { Calendar as CalendarIcon, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Calendar } from '@/components/calendar'
 import { ActionItems } from '@/components/action-items'
 import { formatDate } from '@/lib/utils'
 import { type Meeting, mockMeetings, pastMeetings } from '@/lib/mock-data'
 
 // Styled components
-const MainContainer = styled(Box)(({ theme }) => ({
-  display: 'flex',
+const MainContainer = styled(Box)(() => ({
   minHeight: '100vh',
   backgroundColor: '#ffffff',
 }))
 
-const ContentArea = styled(Box)(({ theme }) => ({
-  flex: 1,
-  overflowY: 'auto',
-}))
-
-const UpcomingSection = styled(Box)(({ theme }) => ({
+const UpcomingSection = styled(Box)(() => ({
   borderBottom: '1px solid #e8e8e8',
   backgroundColor: '#ffffff',
 }))
 
-const MeetingCard = styled(Box)<{ clickable?: boolean }>(({ theme, clickable }) => ({
+const MeetingCard = styled(Box)<{ clickable?: boolean }>(({ clickable }) => ({
   flexShrink: 0,
   width: 320,
   backgroundColor: 'rgba(247, 247, 247, 0.5)',
@@ -45,7 +39,7 @@ const MeetingCard = styled(Box)<{ clickable?: boolean }>(({ theme, clickable }) 
   } : {},
 }))
 
-const PastMeetingCard = styled(Box)(({ theme }) => ({
+const PastMeetingCard = styled(Box)(() => ({
   position: 'relative',
   background: 'linear-gradient(135deg, #ffffff 0%, rgba(247, 247, 247, 0.3) 100%)',
   border: '1px solid #e8e8e8',
@@ -71,30 +65,16 @@ const PastMeetingCard = styled(Box)(({ theme }) => ({
   },
 }))
 
-const CalendarSidebar = styled(Box)(({ theme }) => ({
-  width: 384,
-  borderLeft: '1px solid #e8e8e8',
-  backgroundColor: '#ffffff',
-  flexShrink: 0,
-  [theme.breakpoints.down('lg')]: {
-    display: 'none',
-  },
-}))
+
 
 export default function MeetingsPage() {
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
-  const [expandedMeeting, setExpandedMeeting] = useState<string | null>(null)
-  const [showHistory, setShowHistory] = useState(false)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
 
   const upcomingMeetings = mockMeetings.filter((m) => m.date >= new Date())
   const completedMeetings = [...mockMeetings, ...pastMeetings]
     .filter((m) => m.date < new Date() && m.hasTranscript)
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-
-  const allMeetings = showHistory
-    ? [...mockMeetings, ...pastMeetings].filter((m) => m.date < new Date())
-    : mockMeetings.filter((m) => m.date >= new Date())
 
   const getPriorityColor = (index: number) => {
     if (index === 0) return { backgroundColor: 'rgba(220, 38, 38, 0.1)', color: '#dc2626', borderColor: 'rgba(220, 38, 38, 0.2)' }
@@ -110,9 +90,28 @@ export default function MeetingsPage() {
 
   return (
     <MainContainer>
-      <ContentArea>
-        <UpcomingSection>
+      <UpcomingSection>
           <Container maxWidth="xl" sx={{ py: 3 }}>
+            {/* Action Buttons */}
+            <Box sx={{ display: 'flex', gap: 1.5, mb: 3 }}>
+              <Button
+                onClick={() => console.log('Schedule meeting')}
+                variant="default"
+                size="sm"
+              >
+                <CalendarIcon size={16} style={{ marginRight: 8 }} />
+                Schedule
+              </Button>
+              <Button
+                onClick={() => setShowInviteDialog(true)}
+                variant="outline"
+                size="sm"
+              >
+                <UserPlus size={16} style={{ marginRight: 8 }} />
+                Invite Nylas
+              </Button>
+            </Box>
+
             <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525', mb: 2 }}>
               Upcoming Meetings
             </Typography>
@@ -168,14 +167,13 @@ export default function MeetingsPage() {
             Past Meetings
           </Typography>
           <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(2, 1fr)' } }}>
-            {completedMeetings.map((meeting, index) => {
+            {completedMeetings.map((meeting) => {
               const keyPoints = extractKeyPoints(meeting.notes)
               return (
                 <PastMeetingCard
                   key={meeting.id}
                   onClick={() => {
                     setSelectedMeeting(meeting)
-                    setExpandedMeeting(meeting.id)
                   }}
                 >
                   <Box sx={{ position: 'relative', zIndex: 1 }}>
@@ -245,19 +243,6 @@ export default function MeetingsPage() {
             })}
           </Box>
         </Container>
-      </ContentArea>
-
-      <CalendarSidebar>
-        <Calendar
-          meetings={allMeetings}
-          selectedMeeting={selectedMeeting}
-          onSelectMeeting={setSelectedMeeting}
-          showHistory={showHistory}
-          onToggleHistory={() => setShowHistory(!showHistory)}
-          onSchedule={() => console.log('Schedule meeting')}
-          onInviteNylas={() => setShowInviteDialog(true)}
-        />
-      </CalendarSidebar>
 
       {/* Meeting Details Dialog */}
       <Dialog open={!!selectedMeeting} onOpenChange={(open) => !open && setSelectedMeeting(null)}>

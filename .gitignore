@@ -94,3 +94,5 @@ pids
 # ----------------------------
 /config/local.json
 /secrets/
+
+v0mockup/
