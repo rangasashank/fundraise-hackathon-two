@@ -6,6 +6,7 @@ import notetakerRoutes from "./routes/notetaker"
 import webhookRoutes from "./routes/webhook"
 import setupRoutes from "./routes/setup"
 import sseRoutes from "./routes/sse"
+import aiRoutes from "./routes/ai"
 import { createWebhookManager } from "./services/webhookManager"
 
 dotenv.config()
@@ -94,6 +95,7 @@ app.use("/api/notetaker", notetakerRoutes)
 app.use("/api/webhooks", webhookRoutes)
 app.use("/api/setup", setupRoutes)
 app.use("/api/sse", sseRoutes)
+app.use("/api/ai", aiRoutes)
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

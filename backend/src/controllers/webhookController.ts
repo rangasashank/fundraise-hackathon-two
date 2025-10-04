@@ -4,6 +4,7 @@ import NotetakerSession from '../models/NotetakerSession';
 import Transcript from '../models/Transcript';
 import nylasService from '../services/nylasService';
 import { emitSessionUpdate, emitTranscriptUpdate } from './sseController';
+import TranscriptProcessingService from '../services/transcriptProcessingService';
 
 /**
  * Verify Nylas webhook signature
@@ -441,6 +442,36 @@ async function handleMediaAvailable(data: any): Promise<void> {
       }
 
       await transcript.save();
+
+      // Process transcript with AI agents if transcript text is available
+      if (transcript.transcriptText && transcript.transcriptText.trim().length > 0) {
+        console.log(`🤖 Triggering AI processing for transcript ${transcript._id}`);
+
+        // Process with AI agents asynchronously (don't block the webhook response)
+        const transcriptProcessingService = new TranscriptProcessingService();
+        transcriptProcessingService.processTranscriptWithAI(transcript._id.toString())
+          .then((result) => {
+            if (result) {
+              console.log(`✅ AI processing completed for transcript ${transcript._id}`);
+
+              // Emit SSE update with AI-generated content
+              emitTranscriptUpdate({
+                notetakerId,
+                sessionId: transcript.sessionId,
+                status: transcript.status,
+                hasTranscript: !!transcript.transcriptText,
+                hasSummary: !!result.summary.success,
+                hasActionItems: !!result.actionItems.success,
+                timestamp: new Date().toISOString()
+              });
+            } else {
+              console.warn(`⚠️  AI processing failed for transcript ${transcript._id}`);
+            }
+          })
+          .catch((error) => {
+            console.error(`❌ AI processing error for transcript ${transcript._id}:`, error.message);
+          });
+      }
 
       // Emit SSE update for transcript
       emitTranscriptUpdate({
