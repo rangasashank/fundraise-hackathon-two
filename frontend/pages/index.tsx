@@ -1,5 +1,6 @@
 import Head from "next/head"
 import Link from "next/link"
+import { Navigation } from "@/components/navigation"
 
 export default function Home() {
 	return (
@@ -8,12 +9,13 @@ export default function Home() {
 				<title>Fundraise Hackathon 2</title>
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 			</Head>
+			<Navigation />
 			<main style={{ padding: 24, maxWidth: 800, margin: "0 auto" }}>
 				<h1 style={{ fontSize: 48, fontWeight: "bold", marginBottom: 16 }}>
 					Fundraise Hackathon 2
 				</h1>
 				<p style={{ fontSize: 18, color: "#666", marginBottom: 32 }}>
-					Nylas Notetaker Integration for Zoom Meetings
+					Nylas Notetaker Integration with Meeting Management
 				</p>
 
 				<div
@@ -22,6 +24,7 @@ export default function Home() {
 						padding: 32,
 						borderRadius: 8,
 						boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+						marginBottom: 32,
 					}}
 				>
 					<h2 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>
@@ -32,25 +35,64 @@ export default function Home() {
 						<li>✅ Automatic meeting transcription</li>
 						<li>✅ Audio recording</li>
 						<li>✅ Real-time webhook notifications</li>
+						<li>✅ Meeting management and calendar view</li>
+						<li>✅ AI-powered action items extraction</li>
+						<li>✅ Task management and tracking</li>
 					</ul>
 
-					<Link href="/notetaker">
-						<button
-							style={{
-								padding: "16px 32px",
-								backgroundColor: "#0070f3",
-								color: "white",
-								border: "none",
-								borderRadius: 8,
-								fontSize: 18,
-								fontWeight: "bold",
-								cursor: "pointer",
-								width: "100%",
-							}}
-						>
-							Go to Notetaker Dashboard →
-						</button>
-					</Link>
+					<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+						<Link href="/meetings">
+							<button
+								style={{
+									padding: "16px 24px",
+									backgroundColor: "#343434",
+									color: "white",
+									border: "none",
+									borderRadius: 8,
+									fontSize: 16,
+									fontWeight: "bold",
+									cursor: "pointer",
+									width: "100%",
+								}}
+							>
+								📅 Meetings
+							</button>
+						</Link>
+						<Link href="/tasks">
+							<button
+								style={{
+									padding: "16px 24px",
+									backgroundColor: "#343434",
+									color: "white",
+									border: "none",
+									borderRadius: 8,
+									fontSize: 16,
+									fontWeight: "bold",
+									cursor: "pointer",
+									width: "100%",
+								}}
+							>
+								✅ Tasks
+							</button>
+						</Link>
+						<Link href="/notetaker">
+							<button
+								style={{
+									padding: "16px 24px",
+									backgroundColor: "#0070f3",
+									color: "white",
+									border: "none",
+									borderRadius: 8,
+									fontSize: 16,
+									fontWeight: "bold",
+									cursor: "pointer",
+									width: "100%",
+								}}
+							>
+								🎙️ Notetaker
+							</button>
+						</Link>
+					</div>
 				</div>
 
 				<div

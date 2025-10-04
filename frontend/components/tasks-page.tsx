@@ -1,0 +1,352 @@
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { Box, Typography, Container, Checkbox, Collapse, IconButton } from '@mui/material'
+import { styled } from '@mui/material/styles'
+import { Calendar, CheckCircle2, Circle, Clock, User, ChevronDown, ChevronRight } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { formatDate } from '@/lib/utils'
+import { mockMeetings, pastMeetings, type Meeting } from '@/lib/mock-data'
+
+interface Task {
+  id: string
+  title: string
+  description: string
+  assignee: string
+  dueDate: string
+  priority: 'high' | 'medium' | 'low'
+  status: 'todo' | 'in-progress' | 'completed'
+  meetingId?: string
+  meetingTitle?: string
+}
+
+const CURRENT_USER = 'Sarah Chen'
+
+// Styled components
+const MainContainer = styled(Container)(({ theme }) => ({
+  maxWidth: '1200px',
+  padding: '32px 24px',
+}))
+
+const SectionCard = styled(Card)(({ theme }) => ({
+  marginBottom: '24px',
+  border: '1px solid #e8e8e8',
+  borderRadius: '12px',
+  overflow: 'hidden',
+}))
+
+const SectionHeader = styled(Box)(({ theme }) => ({
+  padding: '20px 24px',
+  backgroundColor: '#f7f7f7',
+  borderBottom: '1px solid #e8e8e8',
+}))
+
+const TaskCard = styled(Card)<{ highlight?: boolean }>(({ theme, highlight }) => ({
+  padding: '16px',
+  margin: '8px 0',
+  border: highlight ? '2px solid #343434' : '1px solid #e8e8e8',
+  borderRadius: '10px',
+  backgroundColor: highlight ? 'rgba(52, 52, 52, 0.05)' : '#ffffff',
+  transition: 'all 0.2s ease',
+  '&:hover': {
+    backgroundColor: 'rgba(247, 247, 247, 0.5)',
+  },
+}))
+
+const MeetingHeader = styled(Box)<{ expanded?: boolean }>(({ theme, expanded }) => ({
+  padding: '16px 20px',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  backgroundColor: expanded ? '#f7f7f7' : 'transparent',
+  borderBottom: expanded ? '1px solid #e8e8e8' : 'none',
+  transition: 'all 0.2s ease',
+  '&:hover': {
+    backgroundColor: '#f7f7f7',
+  },
+}))
+
+function generateTasksFromMeetings(): Task[] {
+  const allMeetings = [...mockMeetings, ...pastMeetings]
+  const tasks: Task[] = []
+
+  allMeetings.forEach((meeting) => {
+    if (meeting.hasTranscript && meeting.notes) {
+      // Extract action items from notes
+      const actionItemsMatch = meeting.notes.match(/Action Items?:([\s\S]*?)(?=\n\n|$)/i)
+      if (actionItemsMatch) {
+        const items = actionItemsMatch[1].split('\n').filter((line) => line.trim().startsWith('-'))
+        items.forEach((item, index) => {
+          const taskText = item.replace(/^-\s*/, '').trim()
+          const assigneeMatch = taskText.match(/\(([^)]+)\s*-/)
+          const dueDateMatch = taskText.match(/Due:?\s*([^)]+)\)/)
+
+          const assignee = assigneeMatch ? assigneeMatch[1].trim() : meeting.attendees[index % meeting.attendees.length]
+          const taskTitle = taskText.split('(')[0].trim()
+
+          tasks.push({
+            id: `${meeting.id}-task-${index}`,
+            title: taskTitle,
+            description: `From ${meeting.title}`,
+            assignee,
+            dueDate: dueDateMatch
+              ? dueDateMatch[1]
+              : new Date(meeting.date.getTime() + 7 * 86400000).toISOString().split('T')[0],
+            priority: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
+            status:
+              meeting.date < new Date(Date.now() - 86400000 * 7)
+                ? 'completed'
+                : index % 3 === 0
+                  ? 'in-progress'
+                  : 'todo',
+            meetingId: meeting.id,
+            meetingTitle: meeting.title,
+          })
+        })
+      }
+    }
+  })
+
+  return tasks
+}
+
+export default function TasksPage() {
+  const router = useRouter()
+  const highlightMeetingId = router.query.meeting as string
+
+  const [tasks] = useState<Task[]>(generateTasksFromMeetings())
+  const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(
+    new Set(highlightMeetingId ? [highlightMeetingId] : [])
+  )
+
+  useEffect(() => {
+    if (highlightMeetingId) {
+      setTimeout(() => {
+        const element = document.getElementById(`meeting-${highlightMeetingId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 100)
+    }
+  }, [highlightMeetingId])
+
+  const myTasks = tasks.filter((t) => t.assignee === CURRENT_USER && t.status !== 'completed')
+  const teamTasks = tasks.filter((t) => t.assignee !== CURRENT_USER && t.status !== 'completed')
+
+  const meetingGroups = new Map<string, { meeting: Meeting; tasks: Task[] }>()
+  const allMeetings = [...mockMeetings, ...pastMeetings]
+
+  tasks.forEach((task) => {
+    if (task.meetingId) {
+      const meeting = allMeetings.find((m) => m.id === task.meetingId)
+      if (meeting) {
+        if (!meetingGroups.has(task.meetingId)) {
+          meetingGroups.set(task.meetingId, { meeting, tasks: [] })
+        }
+        meetingGroups.get(task.meetingId)!.tasks.push(task)
+      }
+    }
+  })
+
+  const sortedMeetingGroups = Array.from(meetingGroups.values()).sort(
+    (a, b) => b.meeting.date.getTime() - a.meeting.date.getTime()
+  )
+
+  const toggleMeeting = (meetingId: string) => {
+    setExpandedMeetings((prev) => {
+      const next = new Set(prev)
+      if (next.has(meetingId)) {
+        next.delete(meetingId)
+      } else {
+        next.add(meetingId)
+      }
+      return next
+    })
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'destructive'
+      case 'medium':
+        return 'secondary'
+      case 'low':
+        return 'outline'
+      default:
+        return 'secondary'
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle2 size={16} color="#22c55e" />
+      case 'in-progress':
+        return <Clock size={16} color="#3b82f6" />
+      default:
+        return <Circle size={16} color="#8e8e8e" />
+    }
+  }
+
+  const TaskCardComponent = ({ task, highlight = false }: { task: Task; highlight?: boolean }) => (
+    <TaskCard highlight={highlight}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+        <Checkbox
+          checked={task.status === 'completed'}
+          sx={{ mt: 0.5, '& .MuiSvgIcon-root': { fontSize: 20 } }}
+        />
+        <Box sx={{ flex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 1 }}>
+            <Typography variant="body1" sx={{ fontWeight: 500, color: '#252525' }}>
+              {task.title}
+            </Typography>
+            <Badge variant={getPriorityColor(task.priority)}>
+              {task.priority}
+            </Badge>
+          </Box>
+          <Typography variant="body2" sx={{ color: '#8e8e8e', mb: 1 }}>
+            {task.description}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {getStatusIcon(task.status)}
+              <Typography variant="caption" sx={{ color: '#8e8e8e', textTransform: 'capitalize' }}>
+                {task.status.replace('-', ' ')}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <User size={12} color="#8e8e8e" />
+              <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
+                {task.assignee}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Calendar size={12} color="#8e8e8e" />
+              <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
+                {new Date(task.dueDate).toLocaleDateString()}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </TaskCard>
+  )
+
+  return (
+    <MainContainer>
+      <Typography variant="h3" sx={{ fontWeight: 700, color: '#252525', mb: 4 }}>
+        Tasks
+      </Typography>
+
+      {/* My Action Items */}
+      <SectionCard>
+        <SectionHeader>
+          <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525' }}>
+            My Action Items ({myTasks.length})
+          </Typography>
+        </SectionHeader>
+        <CardContent>
+          {myTasks.length === 0 ? (
+            <Typography variant="body2" sx={{ color: '#8e8e8e', textAlign: 'center', py: 4 }}>
+              No action items assigned to you.
+            </Typography>
+          ) : (
+            myTasks.map((task) => (
+              <TaskCardComponent key={task.id} task={task} />
+            ))
+          )}
+        </CardContent>
+      </SectionCard>
+
+      {/* Team Action Items */}
+      <SectionCard>
+        <SectionHeader>
+          <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525' }}>
+            Team Action Items ({teamTasks.length})
+          </Typography>
+        </SectionHeader>
+        <CardContent>
+          {teamTasks.length === 0 ? (
+            <Typography variant="body2" sx={{ color: '#8e8e8e', textAlign: 'center', py: 4 }}>
+              No team action items.
+            </Typography>
+          ) : (
+            teamTasks.map((task) => (
+              <TaskCardComponent key={task.id} task={task} />
+            ))
+          )}
+        </CardContent>
+      </SectionCard>
+
+      {/* Meeting History */}
+      <SectionCard>
+        <SectionHeader>
+          <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525' }}>
+            Meeting History ({sortedMeetingGroups.length})
+          </Typography>
+        </SectionHeader>
+        <Box>
+          {sortedMeetingGroups.map(({ meeting, tasks: meetingTasks }) => {
+            const isExpanded = expandedMeetings.has(meeting.id)
+            const isHighlighted = highlightMeetingId === meeting.id
+
+            return (
+              <Box
+                key={meeting.id}
+                id={`meeting-${meeting.id}`}
+                sx={{
+                  border: isHighlighted ? '2px solid #343434' : 'none',
+                  borderRadius: isHighlighted ? '10px' : 0,
+                  margin: isHighlighted ? '8px' : 0,
+                }}
+              >
+                <MeetingHeader
+                  expanded={isExpanded}
+                  onClick={() => toggleMeeting(meeting.id)}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <IconButton size="small" sx={{ p: 0 }}>
+                      {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                    </IconButton>
+                    <Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#252525' }}>
+                        {meeting.title}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
+                        {formatDate(meeting.date)} • {meetingTasks.length} tasks
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Badge variant="secondary">
+                    {formatDate(meeting.date)}
+                  </Badge>
+                </MeetingHeader>
+
+                <Collapse in={isExpanded}>
+                  <Box sx={{ p: 2, backgroundColor: '#ffffff' }}>
+                    {meetingTasks.map((task) => (
+                      <TaskCardComponent
+                        key={task.id}
+                        task={task}
+                        highlight={isHighlighted}
+                      />
+                    ))}
+                  </Box>
+                </Collapse>
+              </Box>
+            )
+          })}
+
+          {sortedMeetingGroups.length === 0 && (
+            <Box sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
+                No meetings with action items found.
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </SectionCard>
+    </MainContainer>
+  )
+}
