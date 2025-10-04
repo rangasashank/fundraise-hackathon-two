@@ -181,6 +181,64 @@ class NotetakerApi {
 
     return response.json();
   }
+
+  /**
+   * Process transcript with AI agents manually
+   */
+  async processTranscriptWithAI(transcriptId: string, options?: { processSummary?: boolean; processActionItems?: boolean }): Promise<{ success: boolean; data?: any; error?: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/ai/process-transcript`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        transcriptId,
+        processSummary: options?.processSummary ?? true,
+        processActionItems: options?.processActionItems ?? true,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to process transcript with AI');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Reprocess transcript with AI agents (force reprocessing)
+   */
+  async reprocessTranscriptWithAI(transcriptId: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/ai/reprocess-transcript`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ transcriptId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to reprocess transcript with AI');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Get AI processing status for a transcript
+   */
+  async getAIProcessingStatus(transcriptId: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/ai/status/${transcriptId}`);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get AI processing status');
+    }
+
+    return response.json();
+  }
 }
 
 export const notetakerApi = new NotetakerApi();

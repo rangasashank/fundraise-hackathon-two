@@ -83,7 +83,8 @@ pids
 !.yarn/versions
 
 # dotenv backup
-.env.bak
+/backend/.env
+/frontend/.env.local
 
 # Local development databases (if applicable)
 *.sqlite

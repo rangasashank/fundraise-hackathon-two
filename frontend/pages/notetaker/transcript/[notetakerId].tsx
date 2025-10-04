@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { notetakerApi, Transcript, NotetakerSession } from '@/lib/notetakerApi';
+import ActionItemsList from '@/components/ActionItemsList';
 
 export default function TranscriptViewer() {
   const router = useRouter();
@@ -11,6 +12,9 @@ export default function TranscriptViewer() {
   const [transcript, setTranscript] = useState<Transcript | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [aiProcessing, setAiProcessing] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [aiSuccess, setAiSuccess] = useState('');
 
   useEffect(() => {
     if (notetakerId && typeof notetakerId === 'string') {
@@ -38,6 +42,64 @@ export default function TranscriptViewer() {
   };
 
   const session = getSession();
+
+  const handleProcessWithAI = async (processSummary: boolean = true, processActionItems: boolean = true) => {
+    if (!transcript) return;
+
+    try {
+      setAiProcessing(true);
+      setAiError('');
+      setAiSuccess('');
+
+      const response = await notetakerApi.processTranscriptWithAI(transcript._id, {
+        processSummary,
+        processActionItems
+      });
+
+      if (response.success) {
+        setAiSuccess('AI processing completed successfully!');
+        // Reload transcript to get updated data
+        await loadTranscript(transcript.notetakerId);
+      } else {
+        setAiError(response.error || 'AI processing failed');
+      }
+    } catch (err: any) {
+      setAiError(err.message);
+    } finally {
+      setAiProcessing(false);
+    }
+  };
+
+  const handleReprocessWithAI = async () => {
+    if (!transcript) return;
+
+    if (!confirm('Are you sure you want to reprocess this transcript? This will overwrite existing AI-generated content.')) {
+      return;
+    }
+
+    try {
+      setAiProcessing(true);
+      setAiError('');
+      setAiSuccess('');
+
+      const response = await notetakerApi.reprocessTranscriptWithAI(transcript._id);
+
+      if (response.success) {
+        setAiSuccess('AI reprocessing completed successfully!');
+        // Reload transcript to get updated data
+        await loadTranscript(transcript.notetakerId);
+      } else {
+        setAiError(response.error || 'AI reprocessing failed');
+      }
+    } catch (err: any) {
+      setAiError(err.message);
+    } finally {
+      setAiProcessing(false);
+    }
+  };
+
+  const hasAIContent = transcript?.summaryText || (transcript?.actionItems && transcript.actionItems.length > 0);
+  const canProcessWithAI = transcript?.transcriptText && transcript.transcriptText.trim().length > 0;
 
   return (
     <>
@@ -129,6 +191,124 @@ export default function TranscriptViewer() {
               </div>
             )}
 
+            {/* AI Processing Controls */}
+            {canProcessWithAI && (
+              <div style={{
+                backgroundColor: 'white',
+                padding: 24,
+                borderRadius: 8,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                marginBottom: 24
+              }}>
+                <h2 style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>
+                  AI Processing
+                </h2>
+
+                {aiError && (
+                  <div style={{
+                    backgroundColor: '#fee',
+                    padding: 12,
+                    borderRadius: 4,
+                    marginBottom: 16,
+                    color: '#c00'
+                  }}>
+                    {aiError}
+                  </div>
+                )}
+
+                {aiSuccess && (
+                  <div style={{
+                    backgroundColor: '#efe',
+                    padding: 12,
+                    borderRadius: 4,
+                    marginBottom: 16,
+                    color: '#060'
+                  }}>
+                    {aiSuccess}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {!hasAIContent && (
+                    <button
+                      onClick={() => handleProcessWithAI(true, true)}
+                      disabled={aiProcessing}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: aiProcessing ? '#ccc' : '#0070f3',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 4,
+                        fontSize: 14,
+                        fontWeight: 500,
+                        cursor: aiProcessing ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {aiProcessing ? 'Processing...' : '🤖 Generate Summary & Action Items'}
+                    </button>
+                  )}
+
+                  {!transcript?.summaryText && hasAIContent && (
+                    <button
+                      onClick={() => handleProcessWithAI(true, false)}
+                      disabled={aiProcessing}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: aiProcessing ? '#ccc' : '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 4,
+                        fontSize: 14,
+                        cursor: aiProcessing ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      📝 Generate Summary
+                    </button>
+                  )}
+
+                  {(!transcript?.actionItems || transcript.actionItems.length === 0) && hasAIContent && (
+                    <button
+                      onClick={() => handleProcessWithAI(false, true)}
+                      disabled={aiProcessing}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: aiProcessing ? '#ccc' : '#17a2b8',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 4,
+                        fontSize: 14,
+                        cursor: aiProcessing ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      📋 Extract Action Items
+                    </button>
+                  )}
+
+                  {hasAIContent && (
+                    <button
+                      onClick={handleReprocessWithAI}
+                      disabled={aiProcessing}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: aiProcessing ? '#ccc' : '#ffc107',
+                        color: '#000',
+                        border: 'none',
+                        borderRadius: 4,
+                        fontSize: 14,
+                        cursor: aiProcessing ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      🔄 Reprocess with AI
+                    </button>
+                  )}
+                </div>
+
+                <p style={{ fontSize: 12, color: '#666', marginTop: 12 }}>
+                  AI processing uses OpenAI's GPT models to generate summaries and extract action items from your meeting transcript.
+                </p>
+              </div>
+            )}
+
             {/* Processing Status */}
             {transcript.status === 'processing' && (
               <div style={{ 
@@ -165,22 +345,37 @@ export default function TranscriptViewer() {
 
             {/* Summary */}
             {transcript.summaryText && (
-              <div style={{ 
-                backgroundColor: 'white', 
-                padding: 24, 
-                borderRadius: 8, 
+              <div style={{
+                backgroundColor: 'white',
+                padding: 24,
+                borderRadius: 8,
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                marginBottom: 24 
+                marginBottom: 24,
+                border: '1px solid #e3f2fd'
               }}>
-                <h2 style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>
-                  AI Summary
-                </h2>
-                <div style={{ 
-                  backgroundColor: '#f8f9fa', 
-                  padding: 16, 
-                  borderRadius: 4,
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 'bold', margin: 0, flex: 1 }}>
+                    📝 AI-Generated Summary
+                  </h2>
+                  <span style={{
+                    padding: '4px 8px',
+                    backgroundColor: '#e8f5e8',
+                    color: '#2e7d32',
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontWeight: 500
+                  }}>
+                    ✅ Generated
+                  </span>
+                </div>
+                <div style={{
+                  backgroundColor: '#f8f9fa',
+                  padding: 20,
+                  borderRadius: 8,
                   whiteSpace: 'pre-wrap',
-                  lineHeight: 1.6
+                  lineHeight: 1.7,
+                  border: '1px solid #e9ecef',
+                  fontFamily: 'system-ui, -apple-system, sans-serif'
                 }}>
                   {transcript.summaryText}
                 </div>
@@ -189,23 +384,46 @@ export default function TranscriptViewer() {
 
             {/* Action Items */}
             {transcript.actionItems && transcript.actionItems.length > 0 && (
-              <div style={{ 
-                backgroundColor: 'white', 
-                padding: 24, 
-                borderRadius: 8, 
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                marginBottom: 24 
+              <ActionItemsList
+                actionItems={transcript.actionItems}
+                title="AI-Extracted Action Items"
+                showCheckboxes={true}
+              />
+            )}
+
+            {/* AI Content Missing Notice */}
+            {canProcessWithAI && !hasAIContent && (
+              <div style={{
+                backgroundColor: '#f8f9fa',
+                padding: 24,
+                borderRadius: 8,
+                marginBottom: 24,
+                border: '2px dashed #dee2e6',
+                textAlign: 'center'
               }}>
-                <h2 style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>
-                  Action Items
-                </h2>
-                <ul style={{ paddingLeft: 24, lineHeight: 2 }}>
-                  {transcript.actionItems.map((item, index) => (
-                    <li key={index} style={{ marginBottom: 8 }}>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🤖</div>
+                <h3 style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8, color: '#495057' }}>
+                  AI Processing Available
+                </h3>
+                <p style={{ color: '#6c757d', marginBottom: 16, lineHeight: 1.5 }}>
+                  Your transcript is ready for AI processing. Generate a summary and extract action items automatically.
+                </p>
+                <button
+                  onClick={() => handleProcessWithAI(true, true)}
+                  disabled={aiProcessing}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: aiProcessing ? '#ccc' : '#0070f3',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 6,
+                    fontSize: 16,
+                    fontWeight: 500,
+                    cursor: aiProcessing ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {aiProcessing ? 'Processing...' : '🚀 Generate AI Summary & Action Items'}
+                </button>
               </div>
             )}
 

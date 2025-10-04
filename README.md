@@ -4,6 +4,8 @@
 
 - **Standalone Notetaker Integration** - Invite Nylas bot to any Zoom meeting without calendar integration
 - **Automatic Transcription** - Get full meeting transcripts automatically with speaker labels
+- **AI-Powered Summary** - Automatic meeting summaries using OpenAI GPT models
+- **AI-Powered Action Items** - Automatic extraction of action items and tasks from meetings
 - **Audio Recording** - Download meeting recordings
 - **Real-time Webhooks** - Receive notifications when transcripts are ready
 - **MongoDB Storage** - All data persisted in your database
@@ -16,6 +18,7 @@
 - **Node.js** (v16 or higher)
 - **MongoDB Atlas Account** (free tier works)
 - **Nylas API Account** (free developer account)
+- **OpenAI API Account** (for AI-powered features)
 - **VS Code** (recommended for port forwarding)
 
 ### Step 1: Clone and Install
@@ -92,6 +95,9 @@ NYLAS_API_KEY=nylas_your_api_key_here
 NYLAS_API_URI=https://api.us.nylas.com
 NYLAS_WEBHOOK_SECRET=
 
+# OpenAI Configuration (for AI-powered summary and action items)
+OPENAI_API_KEY=your_openai_api_key_here
+
 # Webhook Auto-Registration
 WEBHOOK_BASE_URL=https://your-tunnel-url.devtunnels.ms
 WEBHOOK_NOTIFICATION_EMAIL=your-email@example.com
@@ -103,6 +109,7 @@ SKIP_WEBHOOK_VERIFICATION=false
 **Important:** Replace the following values:
 - `MONGODB_URI`: Your MongoDB Atlas connection string
 - `NYLAS_API_KEY`: Your Nylas API key
+- `OPENAI_API_KEY`: Your OpenAI API key (get from https://platform.openai.com/api-keys)
 - `NYLAS_WEBHOOK_SECRET`: leave it blank
 - `WEBHOOK_BASE_URL`: Your VS Code tunnel URL (without `/api/webhooks/nylas`)
  - SKIP_WEBHOOK_VERIFICATION=false

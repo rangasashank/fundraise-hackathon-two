@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { notetakerApi, NotetakerSession } from '@/lib/notetakerApi';
+import { notetakerApi, NotetakerSession, Transcript } from '@/lib/notetakerApi';
 
 export default function NotetakerDashboard() {
   const [sessions, setSessions] = useState<NotetakerSession[]>([]);
+  const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -16,6 +17,7 @@ export default function NotetakerDashboard() {
 
   useEffect(() => {
     loadSessions();
+    loadTranscripts();
   }, []);
 
   // Real-time updates using Server-Sent Events (SSE)
@@ -44,9 +46,10 @@ export default function NotetakerDashboard() {
           );
           console.log('🔄 Updated session:', message.data.notetakerId, 'to state:', message.data.state);
         } else if (message.type === 'transcript_update') {
-          // Refresh sessions to show transcript availability
-          console.log('📝 Transcript update received, refreshing sessions...');
+          // Refresh sessions and transcripts to show transcript availability and AI updates
+          console.log('📝 Transcript update received, refreshing data...');
           loadSessions(false);
+          loadTranscripts(false);
         } else if (message.type === 'connected') {
           console.log('🎉 SSE connection confirmed');
         } else if (message.type === 'heartbeat') {
@@ -87,6 +90,16 @@ export default function NotetakerDashboard() {
       if (showLoading) {
         setLoading(false);
       }
+    }
+  };
+
+  const loadTranscripts = async (showLoading = true) => {
+    try {
+      const response = await notetakerApi.getTranscripts();
+      setTranscripts(response.data);
+    } catch (err: any) {
+      console.error('Error loading transcripts:', err);
+      // Don't show transcript loading errors in the main error state
     }
   };
 
@@ -180,6 +193,28 @@ export default function NotetakerDashboard() {
     }
   };
 
+  const getTranscriptForSession = (session: NotetakerSession): Transcript | null => {
+    return transcripts.find(t => t.notetakerId === session.notetakerId) || null;
+  };
+
+  const getAIStatusForSession = (session: NotetakerSession) => {
+    const transcript = getTranscriptForSession(session);
+    if (!transcript || !transcript.transcriptText) {
+      return { status: 'no-transcript', label: 'No Transcript', color: '#6c757d' };
+    }
+
+    const hasSummary = !!transcript.summaryText;
+    const hasActionItems = transcript.actionItems && transcript.actionItems.length > 0;
+
+    if (hasSummary && hasActionItems) {
+      return { status: 'complete', label: 'AI Complete', color: '#28a745' };
+    } else if (hasSummary || hasActionItems) {
+      return { status: 'partial', label: 'AI Partial', color: '#ffc107' };
+    } else {
+      return { status: 'available', label: 'AI Available', color: '#17a2b8' };
+    }
+  };
+
   return (
     <>
       <Head>
@@ -190,6 +225,49 @@ export default function NotetakerDashboard() {
         <h1 style={{ fontSize: 32, fontWeight: 'bold', marginBottom: 24 }}>
           Notetaker Dashboard
         </h1>
+
+        {/* AI Processing Summary */}
+        {transcripts.length > 0 && (
+          <div style={{
+            backgroundColor: 'white',
+            padding: 24,
+            borderRadius: 8,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            marginBottom: 24
+          }}>
+            <h2 style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>
+              🤖 AI Processing Summary
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+              <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#f8f9fa', borderRadius: 8 }}>
+                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#495057' }}>
+                  {transcripts.filter(t => t.transcriptText).length}
+                </div>
+                <div style={{ fontSize: 14, color: '#6c757d' }}>Total Transcripts</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#e8f5e8', borderRadius: 8 }}>
+                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#28a745' }}>
+                  {transcripts.filter(t => t.summaryText && t.actionItems && t.actionItems.length > 0).length}
+                </div>
+                <div style={{ fontSize: 14, color: '#28a745' }}>AI Complete</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#fff3cd', borderRadius: 8 }}>
+                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#856404' }}>
+                  {transcripts.filter(t => (t.summaryText || (t.actionItems && t.actionItems.length > 0)) &&
+                    !(t.summaryText && t.actionItems && t.actionItems.length > 0)).length}
+                </div>
+                <div style={{ fontSize: 14, color: '#856404' }}>AI Partial</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: 16, backgroundColor: '#e3f2fd', borderRadius: 8 }}>
+                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#1976d2' }}>
+                  {transcripts.filter(t => t.transcriptText && !t.summaryText &&
+                    (!t.actionItems || t.actionItems.length === 0)).length}
+                </div>
+                <div style={{ fontSize: 14, color: '#1976d2' }}>AI Available</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Invite Form */}
         <div style={{ 
@@ -317,33 +395,53 @@ export default function NotetakerDashboard() {
                     <th style={{ padding: 12, textAlign: 'left' }}>Name</th>
                     <th style={{ padding: 12, textAlign: 'left' }}>Provider</th>
                     <th style={{ padding: 12, textAlign: 'left' }}>Status</th>
+                    <th style={{ padding: 12, textAlign: 'left' }}>AI Status</th>
                     <th style={{ padding: 12, textAlign: 'left' }}>Created</th>
                     <th style={{ padding: 12, textAlign: 'left' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {sessions.map((session) => (
-                    <tr key={session._id} style={{ borderBottom: '1px solid #eee' }}>
-                      <td style={{ padding: 12 }}>{session.name}</td>
-                      <td style={{ padding: 12 }}>{session.meetingProvider}</td>
-                      <td style={{ padding: 12 }}>
-                        <span style={{
-                          padding: '4px 8px',
-                          borderRadius: 4,
-                          fontSize: 12,
-                          fontWeight: 500,
-                        }} className={getStateBadgeColor(session.state)}>
-                          {getStateDisplayName(session.state)}
-                        </span>
-                        {session.meetingState && (
-                          <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
-                            {session.meetingState.replace(/_/g, ' ')}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ padding: 12 }}>
-                        {new Date(session.createdAt).toLocaleString()}
-                      </td>
+                  {sessions.map((session) => {
+                    const aiStatus = getAIStatusForSession(session);
+                    return (
+                      <tr key={session._id} style={{ borderBottom: '1px solid #eee' }}>
+                        <td style={{ padding: 12 }}>{session.name}</td>
+                        <td style={{ padding: 12 }}>{session.meetingProvider}</td>
+                        <td style={{ padding: 12 }}>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: 4,
+                            fontSize: 12,
+                            fontWeight: 500,
+                          }} className={getStateBadgeColor(session.state)}>
+                            {getStateDisplayName(session.state)}
+                          </span>
+                          {session.meetingState && (
+                            <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
+                              {session.meetingState.replace(/_/g, ' ')}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: 12 }}>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: 4,
+                            fontSize: 12,
+                            fontWeight: 500,
+                            backgroundColor: aiStatus.status === 'complete' ? '#e8f5e8' :
+                                           aiStatus.status === 'partial' ? '#fff3cd' :
+                                           aiStatus.status === 'available' ? '#e3f2fd' : '#f8f9fa',
+                            color: aiStatus.color
+                          }}>
+                            {aiStatus.status === 'complete' && '🤖 '}
+                            {aiStatus.status === 'partial' && '⚡ '}
+                            {aiStatus.status === 'available' && '💡 '}
+                            {aiStatus.label}
+                          </span>
+                        </td>
+                        <td style={{ padding: 12 }}>
+                          {new Date(session.createdAt).toLocaleString()}
+                        </td>
                       <td style={{ padding: 12 }}>
                         <div style={{ display: 'flex', gap: 8 }}>
                           <Link href={`/notetaker/transcript/${session.notetakerId}`}>
@@ -396,7 +494,8 @@ export default function NotetakerDashboard() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  );
+                  })}
                 </tbody>
               </table>
             </div>
