@@ -388,9 +388,9 @@ export default function TasksPage() {
     }
   }
 
-  // Keep tasks in their original order - no automatic reordering
-  const myTasks = tasks.filter((t) => t.assignee === CURRENT_USER)
-  const teamTasks = tasks.filter((t) => t.assignee !== CURRENT_USER)
+  // Sort tasks by priority: high -> medium -> low
+  const myTasks = sortTasksByPriority(tasks.filter((t) => t.assignee === CURRENT_USER))
+  const teamTasks = sortTasksByPriority(tasks.filter((t) => t.assignee !== CURRENT_USER))
 
   const meetingGroups = new Map<string, { meeting: Meeting; tasks: Task[] }>()
   const allMeetings = [...mockMeetings, ...pastMeetings]
@@ -410,7 +410,7 @@ export default function TasksPage() {
   const sortedMeetingGroups = Array.from(meetingGroups.values())
     .map(group => ({
       ...group,
-      tasks: group.tasks // Keep original task order within meetings
+      tasks: sortTasksByPriority(group.tasks) // Sort tasks by priority within meetings
     }))
     .sort((a, b) => b.meeting.date.getTime() - a.meeting.date.getTime())
 
