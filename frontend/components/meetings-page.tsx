@@ -523,7 +523,7 @@ export default function MeetingsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <Box sx={{ py: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ py: 2, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box>
               <Label htmlFor="meeting-link">Meeting Link</Label>
               <Input

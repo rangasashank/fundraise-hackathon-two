@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { Box, Typography, Container, Checkbox, Collapse, IconButton } from '@mui/material'
+import { Box, Typography, Container, Checkbox, Collapse, IconButton, Menu, MenuItem, Select, FormControl } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { Calendar, CheckCircle2, Circle, Clock, User, ChevronDown, ChevronRight } from 'lucide-react'
+import { Calendar, CheckCircle2, Circle, Clock, User, ChevronDown, ChevronRight, Trash2, MoreHorizontal } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { mockMeetings, pastMeetings, type Meeting } from '@/lib/mock-data'
 
@@ -50,6 +51,12 @@ const TaskCard = styled(Card)<{ highlight?: boolean }>(({ theme, highlight }) =>
   transition: 'all 0.2s ease',
   '&:hover': {
     backgroundColor: 'rgba(247, 247, 247, 0.5)',
+  },
+  // Ensure interactive elements remain clickable
+  '& .MuiFormControl-root, & .MuiSelect-root, & .MuiIconButton-root, & .MuiCheckbox-root': {
+    position: 'relative',
+    zIndex: 2,
+    pointerEvents: 'auto',
   },
 }))
 
@@ -115,10 +122,14 @@ export default function TasksPage() {
   const router = useRouter()
   const highlightMeetingId = router.query.meeting as string
 
-  const [tasks] = useState<Task[]>(generateTasksFromMeetings())
+  const [tasks, setTasks] = useState<Task[]>(generateTasksFromMeetings())
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(
     new Set(highlightMeetingId ? [highlightMeetingId] : [])
   )
+
+  // State for enhanced task management
+  const [pendingReorders, setPendingReorders] = useState<Map<string, NodeJS.Timeout>>(new Map())
+  const [taskCountdowns, setTaskCountdowns] = useState<Map<string, number>>(new Map())
 
   useEffect(() => {
     if (highlightMeetingId) {
@@ -131,8 +142,160 @@ export default function TasksPage() {
     }
   }, [highlightMeetingId])
 
-  const myTasks = tasks.filter((t) => t.assignee === CURRENT_USER && t.status !== 'completed')
-  const teamTasks = tasks.filter((t) => t.assignee !== CURRENT_USER && t.status !== 'completed')
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      pendingReorders.forEach((timer) => {
+        clearTimeout(timer)
+      })
+    }
+  }, [])
+
+  // Function to toggle task completion status
+  const handleTaskToggle = (taskId: string) => {
+    // Clear any existing timer for this task
+    const existingTimer = pendingReorders.get(taskId)
+    if (existingTimer) {
+      clearTimeout(existingTimer)
+      setPendingReorders(prev => {
+        const newMap = new Map(prev)
+        newMap.delete(taskId)
+        return newMap
+      })
+      setTaskCountdowns(prev => {
+        const newMap = new Map(prev)
+        newMap.delete(taskId)
+        return newMap
+      })
+    }
+
+    // Update task status immediately
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId
+          ? { ...task, status: task.status === 'completed' ? 'todo' : 'completed' }
+          : task
+      )
+    )
+
+    // If task is being marked as completed, set up reorder timer
+    const task = tasks.find(t => t.id === taskId)
+    if (task && task.status !== 'completed') {
+      // Start countdown
+      setTaskCountdowns(prev => new Map(prev).set(taskId, 60))
+
+      // Update countdown every second
+      const countdownInterval = setInterval(() => {
+        setTaskCountdowns(prev => {
+          const newMap = new Map(prev)
+          const currentCount = newMap.get(taskId) || 0
+          if (currentCount > 1) {
+            newMap.set(taskId, currentCount - 1)
+            return newMap
+          } else {
+            newMap.delete(taskId)
+            return newMap
+          }
+        })
+      }, 1000)
+
+      // Set up reorder timer (60 seconds)
+      const reorderTimer = setTimeout(() => {
+        clearInterval(countdownInterval)
+        reorderCompletedTask(taskId)
+        setPendingReorders(prev => {
+          const newMap = new Map(prev)
+          newMap.delete(taskId)
+          return newMap
+        })
+        setTaskCountdowns(prev => {
+          const newMap = new Map(prev)
+          newMap.delete(taskId)
+          return newMap
+        })
+      }, 60000)
+
+      setPendingReorders(prev => new Map(prev).set(taskId, reorderTimer))
+    }
+  }
+
+  // Function to reorder completed tasks to bottom
+  const reorderCompletedTask = (taskId: string) => {
+    setTasks(prevTasks => {
+      const taskToMove = prevTasks.find(t => t.id === taskId)
+      if (!taskToMove || taskToMove.status !== 'completed') return prevTasks
+
+      const otherTasks = prevTasks.filter(t => t.id !== taskId)
+
+      // Group tasks by their section (my tasks, team tasks, meeting tasks)
+      const myTasks = otherTasks.filter(t => t.assignee === CURRENT_USER)
+      const teamTasks = otherTasks.filter(t => t.assignee !== CURRENT_USER)
+
+      if (taskToMove.assignee === CURRENT_USER) {
+        return [...myTasks, taskToMove, ...teamTasks]
+      } else {
+        return [...myTasks, ...teamTasks, taskToMove]
+      }
+    })
+  }
+
+  // Function to delete a task
+  const handleDeleteTask = (taskId: string) => {
+    // Clear any pending timers for this task
+    const existingTimer = pendingReorders.get(taskId)
+    if (existingTimer) {
+      clearTimeout(existingTimer)
+      setPendingReorders(prev => {
+        const newMap = new Map(prev)
+        newMap.delete(taskId)
+        return newMap
+      })
+      setTaskCountdowns(prev => {
+        const newMap = new Map(prev)
+        newMap.delete(taskId)
+        return newMap
+      })
+    }
+
+    // Remove task from list
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId))
+  }
+
+  // Function to change task status (for in-progress)
+  const handleStatusChange = (taskId: string, newStatus: 'todo' | 'in-progress' | 'completed') => {
+    // Clear any existing timer for this task if changing from completed
+    const existingTimer = pendingReorders.get(taskId)
+    if (existingTimer) {
+      clearTimeout(existingTimer)
+      setPendingReorders(prev => {
+        const newMap = new Map(prev)
+        newMap.delete(taskId)
+        return newMap
+      })
+      setTaskCountdowns(prev => {
+        const newMap = new Map(prev)
+        newMap.delete(taskId)
+        return newMap
+      })
+    }
+
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId
+          ? { ...task, status: newStatus }
+          : task
+      )
+    )
+  }
+
+  // Separate completed and non-completed tasks, keeping completed tasks visible until reordered
+  const myTasksIncomplete = tasks.filter((t) => t.assignee === CURRENT_USER && t.status !== 'completed')
+  const myTasksCompleted = tasks.filter((t) => t.assignee === CURRENT_USER && t.status === 'completed')
+  const myTasks = [...myTasksIncomplete, ...myTasksCompleted]
+
+  const teamTasksIncomplete = tasks.filter((t) => t.assignee !== CURRENT_USER && t.status !== 'completed')
+  const teamTasksCompleted = tasks.filter((t) => t.assignee !== CURRENT_USER && t.status === 'completed')
+  const teamTasks = [...teamTasksIncomplete, ...teamTasksCompleted]
 
   const meetingGroups = new Map<string, { meeting: Meeting; tasks: Task[] }>()
   const allMeetings = [...mockMeetings, ...pastMeetings]
@@ -189,32 +352,120 @@ export default function TasksPage() {
     }
   }
 
-  const TaskCardComponent = ({ task, highlight = false }: { task: Task; highlight?: boolean }) => (
-    <TaskCard highlight={highlight}>
+  const TaskCardComponent = ({
+    task,
+    highlight = false,
+    onToggle,
+    onDelete,
+    onStatusChange,
+    countdown
+  }: {
+    task: Task;
+    highlight?: boolean;
+    onToggle?: (taskId: string) => void;
+    onDelete?: (taskId: string) => void;
+    onStatusChange?: (taskId: string, status: 'todo' | 'in-progress' | 'completed') => void;
+    countdown?: number;
+  }) => (
+    <TaskCard
+      highlight={highlight}
+      sx={{
+        opacity: task.status === 'completed' ? 0.7 : 1,
+        transition: 'opacity 0.2s ease',
+      }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
         <Checkbox
           checked={task.status === 'completed'}
-          sx={{ mt: 0.5, '& .MuiSvgIcon-root': { fontSize: 20 } }}
+          onChange={() => onToggle?.(task.id)}
+          sx={{
+            mt: 0.5,
+            position: 'relative',
+            zIndex: 10,
+            '& .MuiSvgIcon-root': { fontSize: 20 },
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            }
+          }}
         />
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 1 }}>
-            <Typography variant="body1" sx={{ fontWeight: 500, color: '#252525' }}>
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: 500,
+                color: '#252525',
+                textDecoration: task.status === 'completed' ? 'line-through' : 'none',
+                transition: 'text-decoration 0.2s ease'
+              }}
+            >
               {task.title}
             </Typography>
-            <Badge variant={getPriorityColor(task.priority)}>
-              {task.priority}
-            </Badge>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Badge variant={getPriorityColor(task.priority)}>
+                {task.priority}
+              </Badge>
+              {/* Delete Button */}
+              <IconButton
+                size="small"
+                onClick={() => onDelete?.(task.id)}
+                sx={{
+                  p: 0.5,
+                  position: 'relative',
+                  zIndex: 10,
+                  '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.1)' },
+                  color: '#8e8e8e'
+                }}
+              >
+                <Trash2 size={14} />
+              </IconButton>
+            </Box>
           </Box>
           <Typography variant="body2" sx={{ color: '#8e8e8e', mb: 1 }}>
             {task.description}
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              {getStatusIcon(task.status)}
-              <Typography variant="caption" sx={{ color: '#8e8e8e', textTransform: 'capitalize' }}>
-                {task.status.replace('-', ' ')}
-              </Typography>
-            </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            {/* Status Selector */}
+            <FormControl
+              size="small"
+              sx={{
+                minWidth: 120,
+                position: 'relative',
+                zIndex: 10,
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'white',
+                  '&:hover': {
+                    backgroundColor: 'white',
+                  }
+                }
+              }}
+            >
+              <Select
+                value={task.status}
+                onChange={(e) => onStatusChange?.(task.id, e.target.value as 'todo' | 'in-progress' | 'completed')}
+                sx={{
+                  fontSize: '0.75rem',
+                  '& .MuiSelect-select': { py: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 },
+                  '&:hover': {
+                    backgroundColor: 'white',
+                  }
+                }}
+              >
+                <MenuItem value="todo" sx={{ fontSize: '0.75rem' }}>
+                  <Circle size={12} color="#8e8e8e" style={{ marginRight: 4 }} />
+                  To Do
+                </MenuItem>
+                <MenuItem value="in-progress" sx={{ fontSize: '0.75rem' }}>
+                  <Clock size={12} color="#3b82f6" style={{ marginRight: 4 }} />
+                  In Progress
+                </MenuItem>
+                <MenuItem value="completed" sx={{ fontSize: '0.75rem' }}>
+                  <CheckCircle2 size={12} color="#22c55e" style={{ marginRight: 4 }} />
+                  Completed
+                </MenuItem>
+              </Select>
+            </FormControl>
+
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <User size={12} color="#8e8e8e" />
               <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
@@ -228,6 +479,21 @@ export default function TasksPage() {
               </Typography>
             </Box>
           </Box>
+
+          {/* Countdown Display */}
+          {countdown && countdown > 0 && (
+            <Box sx={{
+              mt: 1,
+              p: 1,
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              borderRadius: 1,
+              border: '1px solid rgba(59, 130, 246, 0.2)'
+            }}>
+              <Typography variant="caption" sx={{ color: '#3b82f6', fontWeight: 500 }}>
+                ⏱️ Moving to bottom in {countdown}s
+              </Typography>
+            </Box>
+          )}
         </Box>
       </Box>
     </TaskCard>
@@ -253,7 +519,14 @@ export default function TasksPage() {
             </Typography>
           ) : (
             myTasks.map((task) => (
-              <TaskCardComponent key={task.id} task={task} />
+              <TaskCardComponent
+                key={task.id}
+                task={task}
+                onToggle={handleTaskToggle}
+                onDelete={handleDeleteTask}
+                onStatusChange={handleStatusChange}
+                countdown={taskCountdowns.get(task.id)}
+              />
             ))
           )}
         </CardContent>
@@ -273,7 +546,14 @@ export default function TasksPage() {
             </Typography>
           ) : (
             teamTasks.map((task) => (
-              <TaskCardComponent key={task.id} task={task} />
+              <TaskCardComponent
+                key={task.id}
+                task={task}
+                onToggle={handleTaskToggle}
+                onDelete={handleDeleteTask}
+                onStatusChange={handleStatusChange}
+                countdown={taskCountdowns.get(task.id)}
+              />
             ))
           )}
         </CardContent>
@@ -330,6 +610,10 @@ export default function TasksPage() {
                         key={task.id}
                         task={task}
                         highlight={isHighlighted}
+                        onToggle={handleTaskToggle}
+                        onDelete={handleDeleteTask}
+                        onStatusChange={handleStatusChange}
+                        countdown={taskCountdowns.get(task.id)}
                       />
                     ))}
                   </Box>
