@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Box, Typography, Container, Avatar, AvatarGroup } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { Calendar as CalendarIcon, UserPlus, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Calendar as CalendarIcon, UserPlus, Search, ChevronLeft, ChevronRight, Video, Send, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -364,61 +364,72 @@ export default function MeetingsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogClose onClick={() => setShowScheduleDialog(false)} />
-            <DialogTitle>Schedule a Meeting</DialogTitle>
+            <DialogTitle>
+              <Box className="modal-title-with-icon">
+                <Box className="icon-container-primary">
+                  <CalendarIcon size={20} color="var(--brand-primary)" />
+                </Box>
+                Schedule a Meeting
+              </Box>
+            </DialogTitle>
             <DialogDescription>
               Fill out the details below to schedule a new meeting or add it to your calendar.
             </DialogDescription>
           </DialogHeader>
 
-          <Box sx={{ py: 2, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box>
+          <Box sx={{ py: 2, px: 3, display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <Box className="modal-form-field">
               <Label htmlFor="meeting-title">Title</Label>
               <Input
                 id="meeting-title"
                 placeholder="Project sync-up"
                 value={newMeeting.title}
                 onChange={(e) => setNewMeeting({ ...newMeeting, title: e.target.value })}
-                style={{ marginTop: 8 }}
+                className="modal-form-field input"
               />
             </Box>
 
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 1 }} className="modal-form-field">
                 <Label htmlFor="meeting-date">Date</Label>
                 <Input
                   id="meeting-date"
                   type="date"
                   value={newMeeting.date}
                   onChange={(e) => setNewMeeting({ ...newMeeting, date: e.target.value })}
-                  style={{ marginTop: 8 }}
+                  className="modal-form-field input"
                 />
               </Box>
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 1 }} className="modal-form-field">
                 <Label htmlFor="meeting-time">Time</Label>
                 <Input
                   id="meeting-time"
                   type="time"
                   value={newMeeting.time}
                   onChange={(e) => setNewMeeting({ ...newMeeting, time: e.target.value })}
-                  style={{ marginTop: 8 }}
+                  className="modal-form-field input"
                 />
               </Box>
             </Box>
 
-            <Box>
+            <Box className="modal-form-field">
               <Label htmlFor="meeting-description">Description</Label>
               <Input
                 id="meeting-description"
                 placeholder="Add meeting notes or agenda"
                 value={newMeeting.description}
                 onChange={(e) => setNewMeeting({ ...newMeeting, description: e.target.value })}
-                style={{ marginTop: 8 }}
+                className="modal-form-field input"
               />
             </Box>
           </Box>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowScheduleDialog(false)}
+              className="modal-btn-secondary"
+            >
               Cancel
             </Button>
 
@@ -431,11 +442,13 @@ export default function MeetingsPage() {
                   window.open(links.googleLink, '_blank', 'noopener,noreferrer')
                 }
               }}
+              className="modal-btn-secondary"
               style={{
                 opacity: isFormComplete() ? 1 : 0.5,
                 cursor: isFormComplete() ? 'pointer' : 'not-allowed'
               }}
             >
+              <CalendarIcon size={16} />
               Add to Google Calendar
             </Button>
 
@@ -448,11 +461,13 @@ export default function MeetingsPage() {
                   window.open(links.outlookLink, '_blank', 'noopener,noreferrer')
                 }
               }}
+              className="modal-btn-secondary"
               style={{
                 opacity: isFormComplete() ? 1 : 0.5,
                 cursor: isFormComplete() ? 'pointer' : 'not-allowed'
               }}
             >
+              <CalendarIcon size={16} />
               Add to Outlook
             </Button>
 
@@ -464,11 +479,13 @@ export default function MeetingsPage() {
                   setShowScheduleDialog(false)
                 }
               }}
+              className="modal-btn-primary"
               style={{
                 opacity: isFormComplete() ? 1 : 0.5,
                 cursor: isFormComplete() ? 'pointer' : 'not-allowed'
               }}
             >
+              <Plus size={16} />
               Create Custom Meeting
             </Button>
           </DialogFooter>
@@ -574,25 +591,44 @@ export default function MeetingsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogClose onClick={() => setShowInviteDialog(false)} />
-            <DialogTitle>Invite Nylas Notetaker</DialogTitle>
+            <DialogTitle>
+              <Box className="modal-title-with-icon">
+                <Box className="icon-container-accent">
+                  <Video size={20} color="var(--brand-accent)" />
+                </Box>
+                Invite Nylas Notetaker
+              </Box>
+            </DialogTitle>
             <DialogDescription>
               Add the Nylas notetaker to your meeting for automatic transcription and note-taking.
             </DialogDescription>
           </DialogHeader>
 
-          <Box sx={{ py: 2, px: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box>
+          <Box sx={{ py: 2, px: 3, display: 'flex', flexDirection: 'column', gap: 0 }}>
+            <Box className="modal-form-field">
               <Label htmlFor="meeting-link">Meeting Link</Label>
-              <Input id="meeting-link" placeholder="https://zoom.us/j/123456789" style={{ marginTop: 8 }} />
+              <Input
+                id="meeting-link"
+                placeholder="https://zoom.us/j/123456789"
+                className="modal-form-field input"
+              />
             </Box>
-            <Box>
+            <Box className="modal-form-field">
               <Label htmlFor="notetaker-name">Notetaker Name</Label>
-              <Input id="notetaker-name" defaultValue="Nylas Notetaker" style={{ marginTop: 8 }} />
+              <Input
+                id="notetaker-name"
+                defaultValue="Nylas Notetaker"
+                className="modal-form-field input"
+              />
             </Box>
           </Box>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowInviteDialog(false)}
+              className="modal-btn-secondary"
+            >
               Cancel
             </Button>
             <Button
@@ -600,7 +636,9 @@ export default function MeetingsPage() {
                 console.log('Inviting Nylas notetaker...')
                 setShowInviteDialog(false)
               }}
+              className="modal-btn-primary"
             >
+              <Send size={16} />
               Send Invitation
             </Button>
           </DialogFooter>

@@ -1,7 +1,6 @@
 import React from 'react'
 import {
   Dialog as MuiDialog,
-  DialogTitle as MuiDialogTitle,
   DialogContent as MuiDialogContent,
   DialogActions as MuiDialogActions,
   IconButton,
@@ -11,60 +10,94 @@ import { styled } from '@mui/material/styles'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// Styled components matching v0 mockup design
-const StyledDialog = styled(MuiDialog)(({ theme }) => ({
+// Enhanced styled components with brand colors
+const StyledDialog = styled(MuiDialog)(() => ({
   '& .MuiDialog-paper': {
-    borderRadius: 10,
+    borderRadius: 'var(--radius-lg)',
     maxWidth: '600px',
     width: '100%',
     margin: '16px',
+    background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%)',
+    border: '1px solid var(--grey-200)',
+    boxShadow: '0 20px 40px rgba(79, 195, 161, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1)',
+    position: 'relative',
+    overflow: 'hidden',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '4px',
+      background: 'linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-accent) 100%)',
+      zIndex: 1,
+    },
   },
 }))
 
-const StyledDialogHeader = styled('div')(({ theme }) => ({
+const StyledDialogHeader = styled('div')(() => ({
   padding: '24px 24px 0 24px',
   display: 'flex',
   flexDirection: 'column',
   gap: '8px',
   position: 'relative',
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    bottom: '-12px',
+    left: '24px',
+    right: '24px',
+    height: '2px',
+    background: 'linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-accent) 100%)',
+    opacity: 0.3,
+  },
 }))
 
-const StyledDialogTitle = styled(Typography)(({ theme }) => ({
+const StyledDialogTitle = styled(Typography)(() => ({
   fontSize: '1.125rem',
   fontWeight: 600,
   lineHeight: 1.4,
-  color: '#252525',
+  color: 'var(--text-primary)',
   margin: 0,
   paddingRight: '40px', // Space for close button
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
 }))
 
-const StyledDialogDescription = styled(Typography)(({ theme }) => ({
+const StyledDialogDescription = styled(Typography)(() => ({
   fontSize: '0.875rem',
   lineHeight: 1.5,
-  color: '#8e8e8e',
+  color: 'var(--text-secondary)',
   margin: 0,
 }))
 
-const StyledDialogContent = styled(MuiDialogContent)(({ theme }) => ({
+const StyledDialogContent = styled(MuiDialogContent)(() => ({
   padding: '24px',
+  background: 'transparent',
   '&.MuiDialogContent-root': {
     paddingTop: '24px',
   },
 }))
 
-const StyledDialogActions = styled(MuiDialogActions)(({ theme }) => ({
+const StyledDialogActions = styled(MuiDialogActions)(() => ({
   padding: '0 24px 24px 24px',
-  gap: '8px',
+  gap: '12px',
   justifyContent: 'flex-end',
+  background: 'transparent',
 }))
 
-const CloseButton = styled(IconButton)(({ theme }) => ({
+const CloseButton = styled(IconButton)(() => ({
   position: 'absolute',
   right: '8px',
   top: '8px',
-  color: '#8e8e8e',
+  color: 'var(--text-tertiary)',
+  backgroundColor: 'transparent',
+  transition: 'all var(--transition-fast)',
   '&:hover': {
-    backgroundColor: '#f7f7f7',
+    backgroundColor: 'var(--brand-primary-100)',
+    color: 'var(--brand-primary)',
+    transform: 'scale(1.1)',
   },
 }))
 
@@ -131,7 +164,7 @@ DialogHeader.displayName = 'DialogHeader'
 
 const DialogTitle = React.forwardRef<HTMLHeadingElement, DialogTitleProps>(
   ({ className, children, ...props }, ref) => (
-    <StyledDialogTitle ref={ref} component="h2" className={cn(className)} {...props}>
+    <StyledDialogTitle ref={ref} className={cn(className)} {...props}>
       {children}
     </StyledDialogTitle>
   )
