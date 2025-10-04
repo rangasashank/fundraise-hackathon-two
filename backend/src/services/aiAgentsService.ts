@@ -79,10 +79,10 @@ INSTRUCTIONS:
 
 FORMAT:
 Structure your summary with clear sections like:
-## Key Topics Discussed
-## Decisions Made  
-## Important Points
-## Next Steps (if mentioned)
+Key Topics Discussed:
+Decisions Made:  
+Important Points:
+Next Steps (if mentioned):
 
 Do not include filler words, off-topic conversations, or technical meeting details (like "can you hear me", etc.).`;
 
