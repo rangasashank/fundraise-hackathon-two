@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Box, Typography, Container, Avatar, AvatarGroup } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { Calendar as CalendarIcon, UserPlus } from 'lucide-react'
@@ -32,11 +32,13 @@ const MeetingCard = styled(Box)<{ clickable?: boolean }>(({ clickable }) => ({
   padding: 16,
   cursor: clickable ? 'pointer' : 'default',
   transition: 'all 0.2s ease',
-  '&:hover': clickable ? {
-    backgroundColor: '#f7f7f7',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-  } : {},
+  '&:hover': clickable
+    ? {
+        backgroundColor: '#f7f7f7',
+        transform: 'translateY(-2px)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+      }
+    : {},
 }))
 
 const PastMeetingCard = styled(Box)(() => ({
@@ -65,11 +67,15 @@ const PastMeetingCard = styled(Box)(() => ({
   },
 }))
 
-
-
 export default function MeetingsPage() {
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
+  const [showTranscript, setShowTranscript] = useState(false)
+
+  // Reset transcript view when opening a different meeting
+  useEffect(() => {
+    setShowTranscript(false)
+  }, [selectedMeeting])
 
   const upcomingMeetings = mockMeetings.filter((m) => m.date >= new Date())
   const completedMeetings = [...mockMeetings, ...pastMeetings]
@@ -77,181 +83,236 @@ export default function MeetingsPage() {
     .sort((a, b) => b.date.getTime() - a.date.getTime())
 
   const getPriorityColor = (index: number) => {
-    if (index === 0) return { backgroundColor: 'rgba(220, 38, 38, 0.1)', color: '#dc2626', borderColor: 'rgba(220, 38, 38, 0.2)' }
-    if (index === 1) return { backgroundColor: 'rgba(249, 115, 22, 0.1)', color: '#f97316', borderColor: 'rgba(249, 115, 22, 0.2)' }
-    return { backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderColor: 'rgba(59, 130, 246, 0.2)' }
+    if (index === 0)
+      return {
+        backgroundColor: 'rgba(220, 38, 38, 0.1)',
+        color: '#dc2626',
+        borderColor: 'rgba(220, 38, 38, 0.2)',
+      }
+    if (index === 1)
+      return {
+        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+        color: '#f97316',
+        borderColor: 'rgba(249, 115, 22, 0.2)',
+      }
+    return {
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      color: '#3b82f6',
+      borderColor: 'rgba(59, 130, 246, 0.2)',
+    }
   }
 
   const extractKeyPoints = (notes?: string) => {
     if (!notes) return []
-    const lines = notes.split('\n').filter((line) => line.trim() && !line.includes(':') && line.trim() !== '')
+    const lines = notes
+      .split('\n')
+      .filter((line) => line.trim() && !line.includes(':') && line.trim() !== '')
     return lines.slice(0, 3)
   }
 
   return (
     <MainContainer>
       <UpcomingSection>
-          <Container maxWidth="xl" sx={{ py: 3 }}>
-            {/* Action Buttons */}
-            <Box sx={{ display: 'flex', gap: 1.5, mb: 3 }}>
-              <Button
-                onClick={() => console.log('Schedule meeting')}
-                variant="default"
-                size="sm"
-              >
-                <CalendarIcon size={16} style={{ marginRight: 8 }} />
-                Schedule
-              </Button>
-              <Button
-                onClick={() => setShowInviteDialog(true)}
-                variant="outline"
-                size="sm"
-              >
-                <UserPlus size={16} style={{ marginRight: 8 }} />
-                Invite Nylas
-              </Button>
-            </Box>
-
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525', mb: 2 }}>
-              Upcoming Meetings
-            </Typography>
-            <ScrollArea style={{ width: '100%' }}>
-              <Box sx={{ display: 'flex', gap: 2, pb: 2 }}>
-                {upcomingMeetings.map((meeting) => (
-                  <MeetingCard
-                    key={meeting.id}
-                    clickable
-                    onClick={() => setSelectedMeeting(meeting)}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#252525', flex: 1 }}>
-                        {meeting.title}
-                      </Typography>
-                      <Badge variant="outline" style={{ marginLeft: 8, flexShrink: 0 }}>
-                        {formatDate(meeting.date)}
-                      </Badge>
-                    </Box>
-                    <Typography variant="body2" sx={{ color: '#8e8e8e', mb: 2 }}>
-                      {meeting.time}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AvatarGroup max={3} sx={{ '& .MuiAvatar-root': { width: 28, height: 28, fontSize: '0.75rem' } }}>
-                        {meeting.attendees.slice(0, 3).map((attendee, i) => (
-                          <Avatar
-                            key={i}
-                            sx={{
-                              bgcolor: 'rgba(52, 52, 52, 0.2)',
-                              color: '#343434',
-                              border: '2px solid #ffffff',
-                            }}
-                          >
-                            {attendee.charAt(0)}
-                          </Avatar>
-                        ))}
-                      </AvatarGroup>
-                      {meeting.attendees.length > 3 && (
-                        <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
-                          +{meeting.attendees.length - 3} more
-                        </Typography>
-                      )}
-                    </Box>
-                  </MeetingCard>
-                ))}
-              </Box>
-            </ScrollArea>
-          </Container>
-        </UpcomingSection>
-
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#252525', mb: 3 }}>
-            Past Meetings
-          </Typography>
-          <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(2, 1fr)' } }}>
-            {completedMeetings.map((meeting) => {
-              const keyPoints = extractKeyPoints(meeting.notes)
-              return (
-                <PastMeetingCard
-                  key={meeting.id}
-                  onClick={() => {
-                    setSelectedMeeting(meeting)
-                  }}
-                >
-                  <Box sx={{ position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#252525', flex: 1 }}>
-                        {meeting.title}
-                      </Typography>
-                      <Badge variant="secondary" style={{ marginLeft: 8, flexShrink: 0 }}>
-                        {formatDate(meeting.date)}
-                      </Badge>
-                    </Box>
-                    <Typography variant="body2" sx={{ color: '#8e8e8e', mb: 2 }}>
-                      {meeting.time}
-                    </Typography>
-
-                    {keyPoints.length > 0 && (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="caption" sx={{ color: '#8e8e8e', fontWeight: 500, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                          Key Points
-                        </Typography>
-                        <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          {keyPoints.map((point, i) => (
-                            <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                              <Badge
-                                variant="outline"
-                                style={{
-                                  flexShrink: 0,
-                                  ...getPriorityColor(i),
-                                }}
-                              >
-                                {i + 1}
-                              </Badge>
-                              <Typography variant="body2" sx={{ color: '#252525', lineHeight: 1.4 }}>
-                                {point.replace(/^[-•]\s*/, '')}
-                              </Typography>
-                            </Box>
-                          ))}
-                        </Box>
-                      </Box>
-                    )}
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pt: 2, borderTop: '1px solid #e8e8e8' }}>
-                      <AvatarGroup max={4} sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: '0.75rem' } }}>
-                        {meeting.attendees.slice(0, 4).map((attendee, i) => (
-                          <Avatar
-                            key={i}
-                            title={attendee}
-                            sx={{
-                              bgcolor: 'rgba(52, 52, 52, 0.2)',
-                              color: '#343434',
-                              border: '2px solid #ffffff',
-                            }}
-                          >
-                            {attendee.charAt(0)}
-                          </Avatar>
-                        ))}
-                      </AvatarGroup>
-                      {meeting.attendees.length > 4 && (
-                        <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
-                          +{meeting.attendees.length - 4}
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-                </PastMeetingCard>
-              )
-            })}
+        <Container maxWidth="xl" sx={{ py: 3 }}>
+          {/* Action Buttons */}
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 3 }}>
+            <Button onClick={() => console.log('Schedule meeting')} variant="default" size="sm">
+              <CalendarIcon size={16} style={{ marginRight: 8 }} />
+              Schedule
+            </Button>
+            <Button onClick={() => setShowInviteDialog(true)} variant="outline" size="sm">
+              <UserPlus size={16} style={{ marginRight: 8 }} />
+              Invite Nylas
+            </Button>
           </Box>
+
+          <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525', mb: 2 }}>
+            Upcoming Meetings
+          </Typography>
+          <ScrollArea style={{ width: '100%' }}>
+            <Box sx={{ display: 'flex', gap: 2, pb: 2 }}>
+              {upcomingMeetings.map((meeting) => (
+                <MeetingCard
+                  key={meeting.id}
+                  clickable
+                  onClick={() => setSelectedMeeting(meeting)}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 600, color: '#252525', flex: 1 }}
+                    >
+                      {meeting.title}
+                    </Typography>
+                    <Badge variant="outline" style={{ marginLeft: 8, flexShrink: 0 }}>
+                      {formatDate(meeting.date)}
+                    </Badge>
+                  </Box>
+                  <Typography variant="body2" sx={{ color: '#8e8e8e', mb: 2 }}>
+                    {meeting.time}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <AvatarGroup
+                      max={3}
+                      sx={{ '& .MuiAvatar-root': { width: 28, height: 28, fontSize: '0.75rem' } }}
+                    >
+                      {meeting.attendees.slice(0, 3).map((attendee, i) => (
+                        <Avatar
+                          key={i}
+                          sx={{
+                            bgcolor: 'rgba(52, 52, 52, 0.2)',
+                            color: '#343434',
+                            border: '2px solid #ffffff',
+                          }}
+                        >
+                          {attendee.charAt(0)}
+                        </Avatar>
+                      ))}
+                    </AvatarGroup>
+                    {meeting.attendees.length > 3 && (
+                      <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
+                        +{meeting.attendees.length - 3} more
+                      </Typography>
+                    )}
+                  </Box>
+                </MeetingCard>
+              ))}
+            </Box>
+          </ScrollArea>
         </Container>
+      </UpcomingSection>
+
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 700, color: '#252525', mb: 3 }}>
+          Past Meetings
+        </Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 3,
+            gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(2, 1fr)' },
+          }}
+        >
+          {completedMeetings.map((meeting) => {
+            const keyPoints = extractKeyPoints(meeting.notes)
+            return (
+              <PastMeetingCard key={meeting.id} onClick={() => setSelectedMeeting(meeting)}>
+                <Box sx={{ position: 'relative', zIndex: 1 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      mb: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 600, color: '#252525', flex: 1 }}
+                    >
+                      {meeting.title}
+                    </Typography>
+                    <Badge variant="secondary" style={{ marginLeft: 8, flexShrink: 0 }}>
+                      {formatDate(meeting.date)}
+                    </Badge>
+                  </Box>
+                  <Typography variant="body2" sx={{ color: '#8e8e8e', mb: 2 }}>
+                    {meeting.time}
+                  </Typography>
+
+                  {keyPoints.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: '#8e8e8e',
+                          fontWeight: 500,
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        Key Points
+                      </Typography>
+                      <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        {keyPoints.map((point, i) => (
+                          <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                            <Badge
+                              variant="outline"
+                              style={{
+                                flexShrink: 0,
+                                ...getPriorityColor(i),
+                              }}
+                            >
+                              {i + 1}
+                            </Badge>
+                            <Typography variant="body2" sx={{ color: '#252525', lineHeight: 1.4 }}>
+                              {point.replace(/^[-•]\s*/, '')}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      pt: 2,
+                      borderTop: '1px solid #e8e8e8',
+                    }}
+                  >
+                    <AvatarGroup
+                      max={4}
+                      sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: '0.75rem' } }}
+                    >
+                      {meeting.attendees.slice(0, 4).map((attendee, i) => (
+                        <Avatar
+                          key={i}
+                          title={attendee}
+                          sx={{
+                            bgcolor: 'rgba(52, 52, 52, 0.2)',
+                            color: '#343434',
+                            border: '2px solid #ffffff',
+                          }}
+                        >
+                          {attendee.charAt(0)}
+                        </Avatar>
+                      ))}
+                    </AvatarGroup>
+                    {meeting.attendees.length > 4 && (
+                      <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
+                        +{meeting.attendees.length - 4}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </PastMeetingCard>
+            )
+          })}
+        </Box>
+      </Container>
 
       {/* Meeting Details Dialog */}
-      <Dialog open={!!selectedMeeting} onOpenChange={(open) => !open && setSelectedMeeting(null)}>
+      <Dialog
+        open={!!selectedMeeting}
+        onOpenChange={(open) => !open && setSelectedMeeting(null)}
+      >
         <DialogContent style={{ maxWidth: '800px', width: '90vw', maxHeight: '90vh' }}>
           <DialogHeader>
             <DialogClose onClick={() => setSelectedMeeting(null)} />
             <DialogTitle>{selectedMeeting?.title}</DialogTitle>
             <DialogDescription>
-              {selectedMeeting && `${formatDate(selectedMeeting.date)} • ${selectedMeeting.time}`}
+              {selectedMeeting &&
+                `${formatDate(selectedMeeting.date)} • ${selectedMeeting.time}`}
             </DialogDescription>
           </DialogHeader>
 
@@ -260,7 +321,10 @@ export default function MeetingsPage() {
               <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {/* Attendees */}
                 <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#252525', mb: 1 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 600, color: '#252525', mb: 1 }}
+                  >
                     Attendees ({selectedMeeting.attendees.length})
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -275,7 +339,10 @@ export default function MeetingsPage() {
                 {/* Description */}
                 {selectedMeeting.description && (
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#252525', mb: 1 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 600, color: '#252525', mb: 1 }}
+                    >
                       Description
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
@@ -285,18 +352,29 @@ export default function MeetingsPage() {
                 )}
 
                 {/* Action Items */}
-                {selectedMeeting.hasTranscript && (
-                  <ActionItems meeting={selectedMeeting} />
-                )}
+                {selectedMeeting.hasTranscript && <ActionItems meeting={selectedMeeting} />}
 
                 {/* Meeting Notes */}
                 {selectedMeeting.notes && (
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#252525', mb: 1 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 600, color: '#252525', mb: 1 }}
+                    >
                       Meeting Summary
                     </Typography>
-                    <Box sx={{ p: 2, backgroundColor: '#f7f7f7', borderRadius: '10px', border: '1px solid #e8e8e8' }}>
-                      <Typography variant="body2" sx={{ color: '#252525', whiteSpace: 'pre-line' }}>
+                    <Box
+                      sx={{
+                        p: 2,
+                        backgroundColor: '#f7f7f7',
+                        borderRadius: '10px',
+                        border: '1px solid #e8e8e8',
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{ color: '#252525', whiteSpace: 'pre-line' }}
+                      >
                         {selectedMeeting.notes}
                       </Typography>
                     </Box>
@@ -306,14 +384,53 @@ export default function MeetingsPage() {
                 {/* Transcript */}
                 {selectedMeeting.transcript && (
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#252525', mb: 1 }}>
-                      Transcript
-                    </Typography>
-                    <Box sx={{ p: 2, backgroundColor: '#f7f7f7', borderRadius: '10px', border: '1px solid #e8e8e8', maxHeight: '300px', overflow: 'auto' }}>
-                      <Typography variant="body2" sx={{ color: '#252525', whiteSpace: 'pre-line', fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                        {selectedMeeting.transcript}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        mb: 1,
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ fontWeight: 600, color: '#252525' }}
+                      >
+                        Transcript
                       </Typography>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowTranscript(!showTranscript)}
+                      >
+                        {showTranscript ? 'Hide' : 'Show'}
+                      </Button>
                     </Box>
+
+                    {showTranscript && (
+                      <Box
+                        sx={{
+                          p: 2,
+                          backgroundColor: '#f7f7f7',
+                          borderRadius: '10px',
+                          border: '1px solid #e8e8e8',
+                          maxHeight: '300px',
+                          overflow: 'auto',
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: '#252525',
+                            whiteSpace: 'pre-line',
+                            fontFamily: 'monospace',
+                            fontSize: '0.8rem',
+                          }}
+                        >
+                          {selectedMeeting.transcript}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 )}
               </Box>
@@ -329,7 +446,8 @@ export default function MeetingsPage() {
             <DialogClose onClick={() => setShowInviteDialog(false)} />
             <DialogTitle>Invite Nylas Notetaker</DialogTitle>
             <DialogDescription>
-              Add the Nylas notetaker to your meeting for automatic transcription and note-taking.
+              Add the Nylas notetaker to your meeting for automatic transcription and
+              note-taking.
             </DialogDescription>
           </DialogHeader>
 
@@ -356,10 +474,12 @@ export default function MeetingsPage() {
             <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={() => {
-              console.log('Inviting Nylas notetaker...')
-              setShowInviteDialog(false)
-            }}>
+            <Button
+              onClick={() => {
+                console.log('Inviting Nylas notetaker...')
+                setShowInviteDialog(false)
+              }}
+            >
               Send Invitation
             </Button>
           </DialogFooter>
