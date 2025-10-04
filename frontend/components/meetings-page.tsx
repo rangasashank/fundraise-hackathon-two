@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Box, Typography, Container, Avatar, AvatarGroup } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { Calendar as CalendarIcon, UserPlus } from 'lucide-react'
+import { Calendar as CalendarIcon, UserPlus, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog'
@@ -72,15 +72,40 @@ export default function MeetingsPage() {
   const [showInviteDialog, setShowInviteDialog] = useState(false)
   const [showTranscript, setShowTranscript] = useState(false)
 
+  // Pagination and search state
+  const [currentPage, setCurrentPage] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
+  const meetingsPerPage = 4
+
   // Reset transcript view when opening a different meeting
   useEffect(() => {
     setShowTranscript(false)
   }, [selectedMeeting])
 
   const upcomingMeetings = mockMeetings.filter((m) => m.date >= new Date())
-  const completedMeetings = [...mockMeetings, ...pastMeetings]
+
+  // Filter and paginate past meetings
+  const allCompletedMeetings = [...mockMeetings, ...pastMeetings]
     .filter((m) => m.date < new Date() && m.hasTranscript)
     .sort((a, b) => b.date.getTime() - a.date.getTime())
+
+  // Apply search filter
+  const filteredCompletedMeetings = allCompletedMeetings.filter((meeting) => {
+    if (!searchQuery.trim()) return true
+    const query = searchQuery.toLowerCase()
+    return (
+      meeting.title.toLowerCase().includes(query) ||
+      meeting.attendees.some(attendee => attendee.toLowerCase().includes(query)) ||
+      (meeting.notes && meeting.notes.toLowerCase().includes(query)) ||
+      (meeting.description && meeting.description.toLowerCase().includes(query))
+    )
+  })
+
+  // Apply pagination
+  const totalPages = Math.ceil(filteredCompletedMeetings.length / meetingsPerPage)
+  const startIndex = currentPage * meetingsPerPage
+  const endIndex = startIndex + meetingsPerPage
+  const paginatedMeetings = filteredCompletedMeetings.slice(startIndex, endIndex)
 
 
 
@@ -182,17 +207,50 @@ export default function MeetingsPage() {
       </UpcomingSection>
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#252525', mb: 3 }}>
-          Past Meetings
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 4, mb: 3 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: '#252525' }}>
+            Past Meetings
+          </Typography>
+
+          {/* Search Bar */}
+          <Box sx={{ position: 'relative', width: 400, flex: 1, maxWidth: 500 }}>
+            <Search
+              size={20}
+              style={{
+                position: 'absolute',
+                left: 12,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#8e8e8e'
+              }}
+            />
+            <Input
+              placeholder="Search meetings..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setCurrentPage(0) // Reset to first page when searching
+              }}
+              style={{
+                paddingLeft: 40,
+                backgroundColor: '#f7f7f7',
+                border: '1px solid #e8e8e8',
+                borderRadius: 10,
+                width: '100%'
+              }}
+            />
+          </Box>
+        </Box>
+
         <Box
           sx={{
             display: 'grid',
             gap: 3,
             gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(2, 1fr)' },
+            mb: 4
           }}
         >
-          {completedMeetings.map((meeting) => {
+          {paginatedMeetings.map((meeting) => {
             const truncatedSummary = getTruncatedSummary(meeting.notes)
             return (
               <PastMeetingCard key={meeting.id} onClick={() => setSelectedMeeting(meeting)}>
@@ -284,6 +342,49 @@ export default function MeetingsPage() {
             )
           })}
         </Box>
+
+        {/* Pagination Controls */}
+        {filteredCompletedMeetings.length > meetingsPerPage && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 4 }}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+              disabled={currentPage === 0}
+            >
+              <ChevronLeft size={16} style={{ marginRight: 4 }} />
+              Previous
+            </Button>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
+                Page {currentPage + 1} of {totalPages}
+              </Typography>
+            </Box>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+              disabled={currentPage >= totalPages - 1}
+            >
+              Next
+              <ChevronRight size={16} style={{ marginLeft: 4 }} />
+            </Button>
+          </Box>
+        )}
+
+        {/* No results message */}
+        {filteredCompletedMeetings.length === 0 && searchQuery.trim() && (
+          <Box sx={{ textAlign: 'center', py: 6 }}>
+            <Typography variant="body1" sx={{ color: '#8e8e8e', mb: 1 }}>
+              No meetings found matching "{searchQuery}"
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
+              Try adjusting your search terms
+            </Typography>
+          </Box>
+        )}
       </Container>
 
       {/* Meeting Details Dialog */}

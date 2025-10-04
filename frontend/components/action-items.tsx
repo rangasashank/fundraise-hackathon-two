@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Box, Typography, CircularProgress } from '@mui/material'
-import { Zap, Check, Upload, User, Calendar } from 'lucide-react'
+import { Zap, Check, Upload, User, Calendar, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +21,8 @@ export function ActionItems({ meeting }: ActionItemsProps) {
   const [actionItems, setActionItems] = useState<ActionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [exported, setExported] = useState(false)
+  const [exportedItems, setExportedItems] = useState<Set<number>>(new Set())
+  const [reprocessing, setReprocessing] = useState(false)
 
   useEffect(() => {
     // Extract action items from meeting notes
@@ -78,6 +80,28 @@ export function ActionItems({ meeting }: ActionItemsProps) {
     setTimeout(() => setExported(false), 2000)
   }
 
+  const handleExportSingleItem = (index: number, item: ActionItem) => {
+    console.log('Exporting single action item to tasks page:', item)
+    setExportedItems(prev => new Set(prev).add(index))
+    setTimeout(() => {
+      setExportedItems(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(index)
+        return newSet
+      })
+    }, 2000)
+  }
+
+  const handleReprocessWithAI = () => {
+    console.log('Reprocessing action items with AI for meeting:', meeting.id)
+    setReprocessing(true)
+    // Simulate AI reprocessing delay
+    setTimeout(() => {
+      setReprocessing(false)
+      // In a real implementation, this would trigger a new AI analysis
+    }, 3000)
+  }
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
@@ -102,24 +126,44 @@ export function ActionItems({ meeting }: ActionItemsProps) {
             <CardTitle>AI-Generated Action Items</CardTitle>
           </Box>
           {!loading && actionItems.length > 0 && (
-            <Button
-              onClick={handleExportToTasks}
-              disabled={exported}
-              size="sm"
-              variant={exported ? 'secondary' : 'default'}
-            >
-              {exported ? (
-                <>
-                  <Check size={16} style={{ marginRight: 8 }} />
-                  Exported
-                </>
-              ) : (
-                <>
-                  <Upload size={16} style={{ marginRight: 8 }} />
-                  Export to Tasks
-                </>
-              )}
-            </Button>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                onClick={handleReprocessWithAI}
+                disabled={reprocessing}
+                size="sm"
+                variant="outline"
+              >
+                {reprocessing ? (
+                  <>
+                    <CircularProgress size={16} sx={{ mr: 1, color: '#343434' }} />
+                    Reprocessing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw size={16} style={{ marginRight: 8 }} />
+                    Reprocess With AI
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleExportToTasks}
+                disabled={exported}
+                size="sm"
+                variant={exported ? 'secondary' : 'default'}
+              >
+                {exported ? (
+                  <>
+                    <Check size={16} style={{ marginRight: 8 }} />
+                    Exported
+                  </>
+                ) : (
+                  <>
+                    <Upload size={16} style={{ marginRight: 8 }} />
+                    Export All to Tasks
+                  </>
+                )}
+              </Button>
+            </Box>
           )}
         </Box>
       </CardHeader>
@@ -160,9 +204,24 @@ export function ActionItems({ meeting }: ActionItemsProps) {
                   <Typography variant="body2" sx={{ flex: 1, color: '#252525' }}>
                     {item.task}
                   </Typography>
-                  <Badge variant={getPriorityColor(item.priority)}>
-                    {item.priority}
-                  </Badge>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Badge variant={getPriorityColor(item.priority)}>
+                      {item.priority}
+                    </Badge>
+                    <Button
+                      onClick={() => handleExportSingleItem(i, item)}
+                      disabled={exportedItems.has(i)}
+                      size="sm"
+                      variant="outline"
+                      style={{ minWidth: 'auto', padding: '4px 8px' }}
+                    >
+                      {exportedItems.has(i) ? (
+                        <Check size={14} />
+                      ) : (
+                        <Upload size={14} />
+                      )}
+                    </Button>
+                  </Box>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
