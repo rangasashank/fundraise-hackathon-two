@@ -23,6 +23,20 @@ interface Task {
 
 const CURRENT_USER = 'Sarah Chen'
 
+// Priority sorting function
+const getPriorityValue = (priority: 'high' | 'medium' | 'low'): number => {
+  switch (priority) {
+    case 'high': return 1
+    case 'medium': return 2
+    case 'low': return 3
+    default: return 3
+  }
+}
+
+const sortTasksByPriority = (tasks: Task[]): Task[] => {
+  return [...tasks].sort((a, b) => getPriorityValue(a.priority) - getPriorityValue(b.priority))
+}
+
 // Styled components
 const MainContainer = styled(Container)(({ theme }) => ({
   maxWidth: '1200px',
@@ -289,12 +303,12 @@ export default function TasksPage() {
   }
 
   // Separate completed and non-completed tasks, keeping completed tasks visible until reordered
-  const myTasksIncomplete = tasks.filter((t) => t.assignee === CURRENT_USER && t.status !== 'completed')
-  const myTasksCompleted = tasks.filter((t) => t.assignee === CURRENT_USER && t.status === 'completed')
+  const myTasksIncomplete = sortTasksByPriority(tasks.filter((t) => t.assignee === CURRENT_USER && t.status !== 'completed'))
+  const myTasksCompleted = sortTasksByPriority(tasks.filter((t) => t.assignee === CURRENT_USER && t.status === 'completed'))
   const myTasks = [...myTasksIncomplete, ...myTasksCompleted]
 
-  const teamTasksIncomplete = tasks.filter((t) => t.assignee !== CURRENT_USER && t.status !== 'completed')
-  const teamTasksCompleted = tasks.filter((t) => t.assignee !== CURRENT_USER && t.status === 'completed')
+  const teamTasksIncomplete = sortTasksByPriority(tasks.filter((t) => t.assignee !== CURRENT_USER && t.status !== 'completed'))
+  const teamTasksCompleted = sortTasksByPriority(tasks.filter((t) => t.assignee !== CURRENT_USER && t.status === 'completed'))
   const teamTasks = [...teamTasksIncomplete, ...teamTasksCompleted]
 
   const meetingGroups = new Map<string, { meeting: Meeting; tasks: Task[] }>()
@@ -312,9 +326,12 @@ export default function TasksPage() {
     }
   })
 
-  const sortedMeetingGroups = Array.from(meetingGroups.values()).sort(
-    (a, b) => b.meeting.date.getTime() - a.meeting.date.getTime()
-  )
+  const sortedMeetingGroups = Array.from(meetingGroups.values())
+    .map(group => ({
+      ...group,
+      tasks: sortTasksByPriority(group.tasks)
+    }))
+    .sort((a, b) => b.meeting.date.getTime() - a.meeting.date.getTime())
 
   const toggleMeeting = (meetingId: string) => {
     setExpandedMeetings((prev) => {
