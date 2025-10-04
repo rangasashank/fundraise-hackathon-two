@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Box, Typography, Container, Avatar, AvatarGroup } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { Calendar as CalendarIcon, UserPlus, Search, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ActionItems } from '@/components/action-items'
+import { MeetingDetailsContent } from '@/components/meeting-details-content'
 import { formatDate } from '@/lib/utils'
 import { type Meeting, mockMeetings, pastMeetings } from '@/lib/mock-data'
 
@@ -70,17 +70,14 @@ const PastMeetingCard = styled(Box)(() => ({
 export default function MeetingsPage() {
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
-  const [showTranscript, setShowTranscript] = useState(false)
+
 
   // Pagination and search state
   const [currentPage, setCurrentPage] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const meetingsPerPage = 4
 
-  // Reset transcript view when opening a different meeting
-  useEffect(() => {
-    setShowTranscript(false)
-  }, [selectedMeeting])
+
 
   const upcomingMeetings = mockMeetings.filter((m) => m.date >= new Date())
 
@@ -392,8 +389,13 @@ export default function MeetingsPage() {
         open={!!selectedMeeting}
         onOpenChange={(open) => !open && setSelectedMeeting(null)}
       >
-        <DialogContent style={{ maxWidth: '800px', width: '90vw', maxHeight: '90vh' }}>
-          <DialogHeader>
+        <DialogContent style={{
+          maxWidth: selectedMeeting?.hasTranscript ? '1600px' : '800px',
+          width: selectedMeeting?.hasTranscript ? '95vw' : '90vw',
+          maxHeight: selectedMeeting?.hasTranscript ? '95vh' : '90vh',
+          padding: selectedMeeting?.hasTranscript ? 0 : undefined
+        }}>
+          <DialogHeader style={{ padding: '24px 24px 0 24px' }}>
             <DialogClose onClick={() => setSelectedMeeting(null)} />
             <DialogTitle>{selectedMeeting?.title}</DialogTitle>
             <DialogDescription>
@@ -403,110 +405,45 @@ export default function MeetingsPage() {
           </DialogHeader>
 
           {selectedMeeting && (
-            <ScrollArea style={{ maxHeight: '60vh' }}>
-              <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* Attendees */}
-                
-              
-                {/* Description */}
-                {selectedMeeting.description && (
+            selectedMeeting.hasTranscript ? (
+              <MeetingDetailsContent meeting={selectedMeeting} />
+            ) : (
+              <ScrollArea style={{ maxHeight: '60vh' }}>
+                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {/* Attendees */}
                   <Box>
                     <Typography
                       variant="subtitle2"
                       sx={{ fontWeight: 600, color: '#252525', mb: 1 }}
                     >
-                      Description
+                      Attendees ({selectedMeeting.attendees.length})
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
-                      {selectedMeeting.description}
-                    </Typography>
-                  </Box>
-                )}
-
-                {/* Action Items */}
-                {selectedMeeting.hasTranscript && <ActionItems meeting={selectedMeeting} />}
-
-                {/* Meeting Notes */}
-                {selectedMeeting.notes && (
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, color: '#252525', mb: 1 }}
-                    >
-                      Meeting Summary
-                    </Typography>
-                    <Box
-                      sx={{
-                        p: 2,
-                        backgroundColor: '#f7f7f7',
-                        borderRadius: '10px',
-                        border: '1px solid #e8e8e8',
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={{ color: '#252525', whiteSpace: 'pre-line' }}
-                      >
-                        {selectedMeeting.notes}
-                      </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {selectedMeeting.attendees.map((attendee, i) => (
+                        <Badge key={i} variant="secondary">
+                          {attendee}
+                        </Badge>
+                      ))}
                     </Box>
                   </Box>
-                )}
 
-                {/* Transcript */}
-                {selectedMeeting.transcript && (
-                  <Box>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 1,
-                      }}
-                    >
+                  {/* Description */}
+                  {selectedMeeting.description && (
+                    <Box>
                       <Typography
                         variant="subtitle2"
-                        sx={{ fontWeight: 600, color: '#252525' }}
+                        sx={{ fontWeight: 600, color: '#252525', mb: 1 }}
                       >
-                        Transcript
+                        Description
                       </Typography>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowTranscript(!showTranscript)}
-                      >
-                        {showTranscript ? 'Hide' : 'Show'}
-                      </Button>
+                      <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
+                        {selectedMeeting.description}
+                      </Typography>
                     </Box>
-
-                    {showTranscript && (
-                      <Box
-                        sx={{
-                          p: 2,
-                          backgroundColor: '#f7f7f7',
-                          borderRadius: '10px',
-                          border: '1px solid #e8e8e8',
-                          maxHeight: '300px',
-                          overflow: 'auto',
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: '#252525',
-                            whiteSpace: 'pre-line',
-                            fontFamily: 'monospace',
-                            fontSize: '0.8rem',
-                          }}
-                        >
-                          {selectedMeeting.transcript}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                )}
-              </Box>
-            </ScrollArea>
+                  )}
+                </Box>
+              </ScrollArea>
+            )
           )}
         </DialogContent>
       </Dialog>
