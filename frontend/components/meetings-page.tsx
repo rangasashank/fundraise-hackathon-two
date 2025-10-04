@@ -82,32 +82,24 @@ export default function MeetingsPage() {
     .filter((m) => m.date < new Date() && m.hasTranscript)
     .sort((a, b) => b.date.getTime() - a.date.getTime())
 
-  const getPriorityColor = (index: number) => {
-    if (index === 0)
-      return {
-        backgroundColor: 'rgba(220, 38, 38, 0.1)',
-        color: '#dc2626',
-        borderColor: 'rgba(220, 38, 38, 0.2)',
-      }
-    if (index === 1)
-      return {
-        backgroundColor: 'rgba(249, 115, 22, 0.1)',
-        color: '#f97316',
-        borderColor: 'rgba(249, 115, 22, 0.2)',
-      }
-    return {
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      color: '#3b82f6',
-      borderColor: 'rgba(59, 130, 246, 0.2)',
-    }
-  }
 
-  const extractKeyPoints = (notes?: string) => {
-    if (!notes) return []
-    const lines = notes
-      .split('\n')
-      .filter((line) => line.trim() && !line.includes(':') && line.trim() !== '')
-    return lines.slice(0, 3)
+
+  const getTruncatedSummary = (notes?: string) => {
+    if (!notes) return ''
+    // Get the first meaningful sentence or line from the notes
+    const lines = notes.split('\n').filter((line) => line.trim() !== '')
+    if (lines.length === 0) return ''
+
+    // Find the first line that's not a header (doesn't end with ':')
+    const firstContentLine = lines.find((line) => !line.trim().endsWith(':'))
+    if (!firstContentLine) return lines[0] // Fallback to first line
+
+    // Truncate to approximately 80 characters, breaking at word boundaries
+    const truncated = firstContentLine.length > 80
+      ? firstContentLine.substring(0, 80).replace(/\s+\S*$/, '') + '...'
+      : firstContentLine
+
+    return truncated.replace(/^[-•]\s*/, '') // Remove bullet points
   }
 
   return (
@@ -201,7 +193,7 @@ export default function MeetingsPage() {
           }}
         >
           {completedMeetings.map((meeting) => {
-            const keyPoints = extractKeyPoints(meeting.notes)
+            const truncatedSummary = getTruncatedSummary(meeting.notes)
             return (
               <PastMeetingCard key={meeting.id} onClick={() => setSelectedMeeting(meeting)}>
                 <Box sx={{ position: 'relative', zIndex: 1 }}>
@@ -227,7 +219,7 @@ export default function MeetingsPage() {
                     {meeting.time}
                   </Typography>
 
-                  {keyPoints.length > 0 && (
+                  {truncatedSummary && (
                     <Box sx={{ mb: 2 }}>
                       <Typography
                         variant="caption"
@@ -238,26 +230,19 @@ export default function MeetingsPage() {
                           letterSpacing: 0.5,
                         }}
                       >
-                        Key Points
+                        Key Takeaways
                       </Typography>
-                      <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        {keyPoints.map((point, i) => (
-                          <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                            <Badge
-                              variant="outline"
-                              style={{
-                                flexShrink: 0,
-                                ...getPriorityColor(i),
-                              }}
-                            >
-                              {i + 1}
-                            </Badge>
-                            <Typography variant="body2" sx={{ color: '#252525', lineHeight: 1.4 }}>
-                              {point.replace(/^[-•]\s*/, '')}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: '#252525',
+                          lineHeight: 1.4,
+                          mt: 1,
+                          fontStyle: 'italic'
+                        }}
+                      >
+                        {truncatedSummary}
+                      </Typography>
                     </Box>
                   )}
 
@@ -320,22 +305,8 @@ export default function MeetingsPage() {
             <ScrollArea style={{ maxHeight: '60vh' }}>
               <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {/* Attendees */}
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600, color: '#252525', mb: 1 }}
-                  >
-                    Attendees ({selectedMeeting.attendees.length})
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    {selectedMeeting.attendees.map((attendee, i) => (
-                      <Badge key={i} variant="secondary">
-                        {attendee}
-                      </Badge>
-                    ))}
-                  </Box>
-                </Box>
-
+                
+              
                 {/* Description */}
                 {selectedMeeting.description && (
                   <Box>
