@@ -23,44 +23,52 @@ import { MeetingDetailsContent } from '@/components/meeting-details-content'
 // Styled components
 const MainContainer = styled(Box)(() => ({
   minHeight: '100vh',
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--surface-alt)',
 }))
 
 const UpcomingSection = styled(Box)(() => ({
-  borderBottom: '1px solid #e8e8e8',
-  backgroundColor: '#ffffff',
+  borderBottom: '1px solid var(--grey-200)',
+  backgroundColor: 'var(--surface)',
+  boxShadow: 'var(--shadow-sm)',
 }))
 
 const MeetingCard = styled(Box)<{ clickable?: boolean }>(({ clickable }) => ({
   flexShrink: 0,
   width: 320,
-  backgroundColor: 'rgba(247, 247, 247, 0.5)',
-  border: '1px solid #e8e8e8',
-  borderRadius: 10,
-  padding: 16,
+  backgroundColor: 'var(--surface)',
+  border: '1px solid var(--grey-200)',
+  borderLeft: '4px solid var(--brand-primary)',
+  borderRadius: 'var(--radius-lg)',
+  padding: 'var(--space-4)',
   cursor: clickable ? 'pointer' : 'default',
-  transition: 'all 0.2s ease',
+  transition: 'all var(--transition-normal)',
+  boxShadow: 'var(--shadow-sm)',
+  background: 'linear-gradient(135deg, var(--surface) 0%, var(--brand-primary-50) 100%)',
   '&:hover': clickable
     ? {
-        backgroundColor: '#f7f7f7',
-        transform: 'translateY(-2px)',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        background: 'linear-gradient(135deg, var(--surface) 0%, var(--brand-primary-100) 100%)',
+        transform: 'translateY(-4px)',
+        boxShadow: '0 8px 24px rgba(79, 195, 161, 0.15)',
+        borderColor: 'var(--brand-primary-300)',
       }
     : {},
 }))
 
 const PastMeetingCard = styled(Box)(() => ({
   position: 'relative',
-  background: 'linear-gradient(135deg, #ffffff 0%, rgba(247, 247, 247, 0.3) 100%)',
-  border: '1px solid #e8e8e8',
-  borderRadius: 12,
-  padding: 24,
+  background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%)',
+  border: '1px solid var(--grey-200)',
+  borderRadius: 'var(--radius-lg)',
+  padding: 'var(--space-6)',
   cursor: 'pointer',
   overflow: 'hidden',
-  transition: 'all 0.3s ease',
+  transition: 'all var(--transition-normal)',
+  boxShadow: 'var(--shadow-sm)',
   '&:hover': {
-    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
-    transform: 'scale(1.02)',
+    boxShadow: '0 12px 32px rgba(79, 195, 161, 0.2)',
+    transform: 'translateY(-4px) scale(1.01)',
+    borderColor: 'var(--brand-primary-300)',
+    background: 'linear-gradient(135deg, var(--surface) 0%, var(--brand-primary-100) 100%)',
     '&::before': {
       opacity: 1,
     },
@@ -69,9 +77,9 @@ const PastMeetingCard = styled(Box)(() => ({
     content: '""',
     position: 'absolute',
     inset: 0,
-    background: 'linear-gradient(135deg, rgba(52, 52, 52, 0.05) 0%, transparent 100%)',
+    background: 'linear-gradient(135deg, var(--brand-primary-100) 0%, transparent 100%)',
     opacity: 0,
-    transition: 'opacity 0.3s ease',
+    transition: 'opacity var(--transition-normal)',
   },
 }))
 
@@ -173,7 +181,7 @@ export default function MeetingsPage() {
             </Button>
           </Box>
 
-          <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525', mb: 2 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, color: 'var(--text-primary)', mb: 2 }}>
             Upcoming Meetings
           </Typography>
 
@@ -186,12 +194,12 @@ export default function MeetingsPage() {
                   onClick={() => setSelectedMeeting(meeting)}
                 >
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#252525' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                       {meeting.title}
                     </Typography>
                     <Badge variant="outline">{formatDate(meeting.date)}</Badge>
                   </Box>
-                  <Typography variant="body2" sx={{ color: '#8e8e8e', mb: 2 }}>
+                  <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mb: 2 }}>
                     {meeting.time}
                   </Typography>
                   <AvatarGroup
@@ -212,7 +220,7 @@ export default function MeetingsPage() {
       {/* Past Meetings Section */}
       <Container maxWidth="xl" sx={{ py: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 4, mb: 3 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#252525' }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'var(--text-primary)' }}>
             Past Meetings
           </Typography>
 
@@ -225,7 +233,7 @@ export default function MeetingsPage() {
                 left: 12,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#8e8e8e',
+                color: 'var(--text-tertiary)',
               }}
             />
             <Input
@@ -237,8 +245,8 @@ export default function MeetingsPage() {
               }}
               style={{
                 paddingLeft: 40,
-                backgroundColor: '#f7f7f7',
-                border: '1px solid #e8e8e8',
+                backgroundColor: 'var(--surface-hover)',
+                border: '1px solid var(--grey-200)',
                 borderRadius: 10,
                 width: '100%',
               }}
@@ -473,10 +481,14 @@ export default function MeetingsPage() {
         onOpenChange={(open) => !open && setSelectedMeeting(null)}
       >
         <DialogContent style={{
-          maxWidth: selectedMeeting?.hasTranscript ? '1600px' : '800px',
-          width: selectedMeeting?.hasTranscript ? '95vw' : '90vw',
+          maxWidth: selectedMeeting?.hasTranscript ? '1500px' : '750px',
+          width: selectedMeeting?.hasTranscript ? '92vw' : '88vw',
           maxHeight: selectedMeeting?.hasTranscript ? '95vh' : '90vh',
-          padding: selectedMeeting?.hasTranscript ? 0 : undefined
+          padding: selectedMeeting?.hasTranscript ? 0 : undefined,
+          overflowX: 'hidden',
+          overflowY: 'auto',
+          boxSizing: 'border-box',
+          margin: '0 auto'
         }}>
           <DialogHeader style={{ padding: selectedMeeting?.hasTranscript ? '24px 24px 0 24px' : undefined }}>
             <DialogClose onClick={() => setSelectedMeeting(null)} />
@@ -491,8 +503,18 @@ export default function MeetingsPage() {
             selectedMeeting.hasTranscript ? (
               <MeetingDetailsContent meeting={selectedMeeting} />
             ) : (
-              <ScrollArea style={{ maxHeight: '60vh' }}>
-                <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <ScrollArea style={{ maxHeight: '60vh', overflowX: 'hidden' }}>
+                <Box sx={{
+                  p: 3,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 3,
+                  maxWidth: '100%',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  overflowWrap: 'break-word',
+                  wordWrap: 'break-word'
+                }}>
                   {/* Attendees */}
                   <Box>
                     <Typography
@@ -501,9 +523,20 @@ export default function MeetingsPage() {
                     >
                       Attendees ({selectedMeeting.attendees.length})
                     </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 1,
+                      maxWidth: '100%',
+                      width: '100%'
+                    }}>
                       {selectedMeeting.attendees.map((attendee, i) => (
-                        <Badge key={i} variant="secondary">
+                        <Badge key={i} variant="secondary" style={{
+                          maxWidth: '200px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
                           {attendee}
                         </Badge>
                       ))}
@@ -519,7 +552,12 @@ export default function MeetingsPage() {
                       >
                         Description
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
+                      <Typography variant="body2" sx={{
+                        color: '#8e8e8e',
+                        overflowWrap: 'break-word',
+                        wordWrap: 'break-word',
+                        maxWidth: '100%'
+                      }}>
                         {selectedMeeting.description}
                       </Typography>
                     </Box>

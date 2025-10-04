@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Box, Typography } from '@mui/material'
+import { Box, Typography, Checkbox } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { Users, Zap, FileText, MessageSquare, User, Calendar, Clock } from 'lucide-react'
 
@@ -15,6 +15,13 @@ interface MeetingDetailsContentProps {
 const ContentContainer = styled(ScrollArea)(() => ({
   height: '80vh',
   width: '100%',
+  maxWidth: '100%',
+  overflowX: 'hidden',
+  overflowY: 'auto',
+  '& > div': {
+    maxWidth: '100%',
+    width: '100%',
+  }
 }))
 
 const Section = styled(Box)(() => ({
@@ -31,24 +38,53 @@ const SectionHeader = styled(Box)(() => ({
   marginBottom: '16px',
   paddingBottom: '8px',
   borderBottom: '2px solid #f1f5f9',
+  maxWidth: '100%',
+  width: '100%',
+  overflowX: 'hidden',
+  '@media (max-width: 600px)': {
+    gap: '8px',
+    marginBottom: '12px',
+    paddingBottom: '6px',
+  }
 }))
 
 const SectionTitle = styled(Typography)(() => ({
   fontSize: '1.1rem',
   fontWeight: 600,
-  color: '#252525',
+  color: 'var(--text-primary)',
+  minWidth: 0,
+  '@media (max-width: 600px)': {
+    fontSize: '1rem',
+  }
 }))
 
 const ContentBox = styled(Box)(() => ({
-  backgroundColor: '#f8f9fa',
-  border: '1px solid #e8e8e8',
-  borderRadius: '12px',
-  padding: '20px',
-  marginTop: '12px',
+  backgroundColor: 'var(--surface)',
+  border: '1px solid var(--grey-200)',
+  borderRadius: 'var(--radius-lg)',
+  padding: 'var(--space-4)',
+  marginTop: 'var(--space-3)',
+  maxWidth: '100%',
+  width: '100%',
+  boxSizing: 'border-box',
+  overflowWrap: 'break-word',
+  wordWrap: 'break-word',
+  overflowX: 'hidden',
+  boxShadow: 'var(--shadow-sm)',
+  transition: 'all var(--transition-fast)',
+  '&:hover': {
+    boxShadow: 'var(--shadow-md)',
+    transform: 'translateY(-1px)',
+  },
+  '@media (min-width: 768px)': {
+    padding: 'var(--space-5)',
+  }
 }))
 
 export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
   const [showTranscript, setShowTranscript] = useState(false)
+  const [selectedActionItems, setSelectedActionItems] = useState<Set<number>>(new Set())
+  const [exportedItems, setExportedItems] = useState<Set<number>>(new Set())
 
   // Mock action items for demo
   const mockActionItems = [
@@ -68,38 +104,93 @@ export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
     }
   }
 
+  // Handle individual action item selection
+  const handleActionItemSelect = (index: number) => {
+    setSelectedActionItems(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
+  }
+
+  // Handle select all / deselect all
+  const handleSelectAll = () => {
+    if (selectedActionItems.size === mockActionItems.length) {
+      setSelectedActionItems(new Set())
+    } else {
+      setSelectedActionItems(new Set(mockActionItems.map((_, index) => index)))
+    }
+  }
+
+  // Handle export selected items
+  const handleExportSelected = () => {
+    if (selectedActionItems.size === 0) return
+
+    const selectedItems = Array.from(selectedActionItems).map(index => mockActionItems[index])
+    console.log('Exporting selected action items to Tasks page:', selectedItems)
+
+    // Add exported items to the exported set
+    setExportedItems(prev => new Set([...Array.from(prev), ...Array.from(selectedActionItems)]))
+
+    // Clear selections after export
+    setSelectedActionItems(new Set())
+
+    // Show success feedback (you could replace this with a toast notification)
+    alert(`Successfully exported ${selectedItems.length} action item(s) to Tasks page!`)
+  }
+
   return (
     <ContentContainer>
-      <Box sx={{ p: 4 }}>
+      <Box sx={{
+        p: { xs: 2, sm: 3, md: 3, lg: 4 },
+        maxWidth: '100%',
+        width: '100%',
+        boxSizing: 'border-box',
+        overflowWrap: 'break-word',
+        wordWrap: 'break-word',
+        overflowX: 'hidden'
+      }}>
         {/* Meeting Overview Section */}
         <Section>
           <SectionHeader>
-            <Users size={20} color="#343434" />
+            <Users size={20} color="var(--brand-primary)" />
             <SectionTitle>Meeting Overview</SectionTitle>
           </SectionHeader>
 
           {/* Meeting Info Grid */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3, mb: 3 }}>
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr', md: '1fr 1fr', lg: '1fr 1fr' },
+            gap: { xs: 2, sm: 2, md: 3 },
+            mb: 3,
+            maxWidth: '100%',
+            width: '100%',
+            overflowX: 'hidden'
+          }}>
             <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#6b7280', mb: 1, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'var(--text-secondary)', mb: 1, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Date & Time
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Calendar size={16} color="#8e8e8e" />
-                <Typography variant="body2" sx={{ color: '#252525' }}>
+                <Calendar size={16} color="var(--brand-primary)" />
+                <Typography variant="body2" sx={{ color: 'var(--text-primary)' }}>
                   {meeting.date.toLocaleDateString()}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Clock size={16} color="#8e8e8e" />
-                <Typography variant="body2" sx={{ color: '#252525' }}>
+                <Clock size={16} color="var(--brand-primary)" />
+                <Typography variant="body2" sx={{ color: 'var(--text-primary)' }}>
                   {meeting.time}
                 </Typography>
               </Box>
             </Box>
 
             <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#6b7280', mb: 1, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#6b7280', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Status
               </Typography>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
@@ -120,9 +211,27 @@ export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#6b7280', mb: 2, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Attendees ({meeting.attendees.length})
             </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+            <Box sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 1.5,
+              maxWidth: '100%',
+              width: '100%',
+              overflowX: 'hidden'
+            }}>
               {meeting.attendees.map((attendee, i) => (
-                <Badge key={i} variant="secondary" style={{ fontSize: '0.85rem', padding: '6px 12px' }}>
+                <Badge
+                  key={i}
+                  variant="secondary"
+                  style={{
+                    fontSize: '0.85rem',
+                    padding: '6px 12px',
+                    maxWidth: '200px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
                   {attendee}
                 </Badge>
               ))}
@@ -145,38 +254,247 @@ export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
         {/* Action Items Section */}
         {meeting.hasTranscript && (
           <Section>
-            <SectionHeader>
-              <Zap size={20} color="#343434" />
-              <SectionTitle>AI-Generated Action Items</SectionTitle>
-              <Button size="sm" variant="outline" style={{ marginLeft: 'auto' }}>
-                Export to Tasks
-              </Button>
+            <SectionHeader sx={{
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              gap: { xs: 2, sm: 0 },
+              maxWidth: '100%',
+              width: '100%',
+              overflowX: 'hidden'
+            }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: { xs: 1, sm: 2 },
+                flex: 1,
+                minWidth: 0,
+                maxWidth: '100%'
+              }}>
+                <Zap size={15} color="var(--brand-primary)" />
+                <SectionTitle sx={{
+                  fontSize: { xs: '1rem', sm: '1.1rem' },
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  AI-Generated Action Items
+                </SectionTitle>
+                <Checkbox
+                  checked={selectedActionItems.size === mockActionItems.length && mockActionItems.length > 0}
+                  indeterminate={selectedActionItems.size > 0 && selectedActionItems.size < mockActionItems.length}
+                  onChange={handleSelectAll}
+                  sx={{
+                    ml: { xs: 0.5, sm: 1 },
+                    '& .MuiSvgIcon-root': { fontSize: { xs: 16, sm: 18 } },
+                    color: 'var(--brand-primary-400)',
+                    '&.Mui-checked': {
+                      color: 'var(--brand-primary)',
+                    },
+                    '&.MuiCheckbox-indeterminate': {
+                      color: 'var(--brand-primary)',
+                    }
+                  }}
+                />
+                <Typography variant="caption" sx={{
+                  color: '#6b7280',
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  display: { xs: 'none', sm: 'block' },
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {selectedActionItems.size === 0
+                    ? 'Select items to export'
+                    : selectedActionItems.size === mockActionItems.length
+                    ? 'All selected'
+                    : `${selectedActionItems.size} of ${mockActionItems.length} selected`
+                  }
+                </Typography>
+              </Box>
+              <Box sx={{
+                display: 'flex',
+                gap: 1,
+                marginLeft: { xs: 0, sm: 'auto' },
+                width: { xs: '100%', sm: 'auto' },
+                justifyContent: { xs: 'stretch', sm: 'flex-end' }
+              }}>
+                <Button
+                  size="sm"
+                  variant={selectedActionItems.size > 0 ? "default" : "outline"}
+                  onClick={handleExportSelected}
+                  disabled={selectedActionItems.size === 0}
+                  style={{
+                    opacity: selectedActionItems.size === 0 ? 0.5 : 1,
+                    cursor: selectedActionItems.size === 0 ? 'not-allowed' : 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: selectedActionItems.size > 0 ? 600 : 400,
+                    minWidth: 'auto',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}
+                >
+                  {selectedActionItems.size > 0
+                    ? `Export ${selectedActionItems.size} to Tasks`
+                    : 'Export to Tasks'
+                  }
+                </Button>
+              </Box>
             </SectionHeader>
 
-            <Box sx={{ display: 'grid', gap: 3 }}>
+            <Box sx={{
+              display: 'grid',
+              gap: { xs: 2, sm: 3 },
+              maxWidth: '100%',
+              width: '100%',
+              overflowX: 'hidden'
+            }}>
               {mockActionItems.map((item, i) => (
-                <ContentBox key={i} sx={{ p: 3 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 3, mb: 2 }}>
-                    <Typography variant="body1" sx={{ flex: 1, color: '#252525', fontWeight: 500, lineHeight: 1.5 }}>
+                <ContentBox
+                  key={i}
+                  sx={{
+                    p: { xs: 2, sm: 3 },
+                    backgroundColor: selectedActionItems.has(i) ? 'var(--brand-primary-50)' : 'var(--surface-alt)',
+                    border: selectedActionItems.has(i) ? '2px solid var(--brand-primary-200)' : '1px solid var(--grey-200)',
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                    maxWidth: '100%',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    overflowX: 'hidden'
+                  }}
+                >
+                  {/* Exported Badge */}
+                  {exportedItems.has(i) && (
+                    <Box sx={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      zIndex: 2
+                    }}>
+                      <Badge
+                        variant="default"
+                        style={{
+                          fontSize: '0.7rem',
+                          padding: '4px 8px',
+                          backgroundColor: 'var(--success)',
+                          color: 'white',
+                          fontWeight: 600,
+                          boxShadow: '0 2px 4px rgba(34, 197, 94, 0.2)'
+                        }}
+                      >
+                        ✓ Exported
+                      </Badge>
+                    </Box>
+                  )}
+
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: { xs: 1, sm: 2 },
+                    mb: 2,
+                    width: '100%',
+                    maxWidth: '100%',
+                    overflowX: 'hidden'
+                  }}>
+                    {/* Selection Checkbox */}
+                    <Checkbox
+                      checked={selectedActionItems.has(i)}
+                      onChange={() => handleActionItemSelect(i)}
+                      sx={{
+                        mt: -0.5,
+                        flexShrink: 0,
+                        '& .MuiSvgIcon-root': { fontSize: { xs: 18, sm: 20 } },
+                        color: 'var(--brand-primary-400)',
+                        '&.Mui-checked': {
+                          color: 'var(--brand-primary)',
+                        }
+                      }}
+                    />
+
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: { xs: 2, sm: 3 },
+                      flex: 1,
+                      width: '100%',
+                      maxWidth: '100%',
+                      minWidth: 0,
+                      overflowX: 'hidden'
+                    }}>
+                    <Typography variant="body1" sx={{
+                      flex: 1,
+                      color: '#252525',
+                      fontWeight: 500,
+                      lineHeight: 1.5,
+                      overflowWrap: 'break-word',
+                      wordWrap: 'break-word',
+                      minWidth: 0,
+                      maxWidth: { xs: 'calc(100% - 60px)', sm: 'calc(100% - 80px)' },
+                      fontSize: { xs: '0.9rem', sm: '1rem' }
+                    }}>
                       {item.task}
                     </Typography>
-                    <Badge variant={getPriorityColor(item.priority)} style={{ flexShrink: 0 }}>
+                    <Badge
+                      variant={getPriorityColor(item.priority)}
+                      style={{
+                        flexShrink: 0,
+                        fontSize: '0.75rem',
+                        padding: '2px 6px'
+                      }}
+                    >
                       {item.priority}
                     </Badge>
+                    </Box>
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, color: '#6b7280' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+
+                  <Box sx={{ ml: { xs: 3, sm: 4 } }}>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: { xs: 2, sm: 3 },
+                    color: '#6b7280',
+                    flexWrap: 'wrap',
+                    maxWidth: '100%',
+                    overflowX: 'hidden'
+                  }}>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      minWidth: 0,
+                      maxWidth: { xs: '150px', sm: '200px' }
+                    }}>
                       <User size={14} />
-                      <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                      <Typography variant="body2" sx={{
+                        fontSize: { xs: '0.8rem', sm: '0.85rem' },
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        minWidth: 0
+                      }}>
                         {item.assignee}
                       </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      minWidth: 0,
+                      flexShrink: 0
+                    }}>
                       <Calendar size={14} />
-                      <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                      <Typography variant="body2" sx={{
+                        fontSize: { xs: '0.8rem', sm: '0.85rem' },
+                        whiteSpace: 'nowrap'
+                      }}>
                         Due: {item.dueDate}
                       </Typography>
                     </Box>
+                  </Box>
                   </Box>
                 </ContentBox>
               ))}
@@ -188,7 +506,7 @@ export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
         {meeting.notes && (
           <Section>
             <SectionHeader>
-              <FileText size={20} color="#343434" />
+              <FileText size={20} color="var(--brand-primary)" />
               <SectionTitle>Meeting Summary</SectionTitle>
             </SectionHeader>
 
@@ -212,7 +530,7 @@ export function MeetingDetailsContent({ meeting }: MeetingDetailsContentProps) {
         {meeting.transcript && (
           <Section>
             <SectionHeader>
-              <MessageSquare size={20} color="#343434" />
+              <MessageSquare size={20} color="var(--brand-primary)" />
               <SectionTitle>Meeting Transcript</SectionTitle>
               <Button
                 size="sm"

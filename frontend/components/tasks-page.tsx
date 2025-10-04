@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { Box, Typography, Container, Checkbox, Collapse, IconButton, Menu, MenuItem, Select, FormControl } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import { Calendar, CheckCircle2, Circle, Clock, User, ChevronDown, ChevronRight, Trash2, MoreHorizontal } from 'lucide-react'
+import { Calendar, CheckCircle2, Circle, Clock, User, ChevronDown, ChevronRight, Trash2, MoreHorizontal, CheckSquare, Users, Video } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -38,33 +38,92 @@ const sortTasksByPriority = (tasks: Task[]): Task[] => {
 }
 
 // Styled components
-const MainContainer = styled(Container)(({ theme }) => ({
+const MainContainer = styled(Container)(() => ({
   maxWidth: '1200px',
-  padding: '32px 24px',
+  padding: 'var(--space-8) var(--space-6)',
+  background: 'linear-gradient(135deg, var(--surface-alt) 0%, var(--brand-primary-50) 50%, var(--brand-accent-50) 100%)',
+  minHeight: '100vh',
+  position: 'relative',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundImage: 'radial-gradient(circle at 20% 20%, var(--brand-primary-100) 1px, transparent 1px), radial-gradient(circle at 80% 80%, var(--brand-accent-100) 1px, transparent 1px)',
+    backgroundSize: '40px 40px, 60px 60px',
+    opacity: 0.3,
+    pointerEvents: 'none',
+    zIndex: 0,
+  },
+  '& > *': {
+    position: 'relative',
+    zIndex: 1,
+  },
 }))
 
-const SectionCard = styled(Card)(({ theme }) => ({
-  marginBottom: '24px',
-  border: '1px solid #e8e8e8',
-  borderRadius: '12px',
+const SectionCard = styled(Card)(() => ({
+  marginBottom: 'var(--space-6)',
+  border: '1px solid var(--grey-200)',
+  borderRadius: 'var(--radius-lg)',
   overflow: 'hidden',
-}))
-
-const SectionHeader = styled(Box)(({ theme }) => ({
-  padding: '20px 24px',
-  backgroundColor: '#f7f7f7',
-  borderBottom: '1px solid #e8e8e8',
-}))
-
-const TaskCard = styled(Card)<{ highlight?: boolean }>(({ theme, highlight }) => ({
-  padding: '16px',
-  margin: '8px 0',
-  border: highlight ? '2px solid #343434' : '1px solid #e8e8e8',
-  borderRadius: '10px',
-  backgroundColor: highlight ? 'rgba(52, 52, 52, 0.05)' : '#ffffff',
-  transition: 'all 0.2s ease',
+  background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-alt) 100%)',
+  boxShadow: 'var(--shadow-md)',
+  transition: 'all var(--transition-normal)',
+  position: 'relative',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '3px',
+    background: 'linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-accent) 100%)',
+    opacity: 0.8,
+  },
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    top: '-50px',
+    right: '-50px',
+    width: '100px',
+    height: '100px',
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, var(--brand-primary-100) 0%, transparent 70%)',
+    opacity: 0.4,
+    pointerEvents: 'none',
+  },
   '&:hover': {
-    backgroundColor: 'rgba(247, 247, 247, 0.5)',
+    boxShadow: 'var(--shadow-lg)',
+    transform: 'translateY(-2px)',
+    '&::before': {
+      opacity: 1,
+    },
+    '&::after': {
+      opacity: 0.6,
+    },
+  }
+}))
+
+const SectionHeader = styled(Box)(() => ({
+  padding: 'var(--space-5) var(--space-6)',
+  backgroundColor: 'var(--surface-alt)',
+  borderBottom: '1px solid var(--grey-200)',
+}))
+
+const TaskCard = styled(Card)<{ highlight?: boolean }>(({ highlight }) => ({
+  padding: 'var(--space-4)',
+  margin: 'var(--space-2) 0',
+  border: highlight ? '2px solid var(--brand-primary)' : '1px solid var(--grey-200)',
+  borderRadius: 'var(--radius-md)',
+  backgroundColor: highlight ? 'var(--brand-primary-50)' : 'var(--surface)',
+  transition: 'all var(--transition-fast)',
+  boxShadow: 'var(--shadow-sm)',
+  '&:hover': {
+    backgroundColor: highlight ? 'var(--brand-primary-100)' : 'var(--surface-hover)',
+    boxShadow: 'var(--shadow-md)',
+    transform: 'translateY(-1px)',
   },
   // Ensure interactive elements remain clickable
   '& .MuiFormControl-root, & .MuiSelect-root, & .MuiIconButton-root, & .MuiCheckbox-root': {
@@ -74,17 +133,37 @@ const TaskCard = styled(Card)<{ highlight?: boolean }>(({ theme, highlight }) =>
   },
 }))
 
-const MeetingHeader = styled(Box)<{ expanded?: boolean }>(({ theme, expanded }) => ({
-  padding: '16px 20px',
+const MeetingHeader = styled(Box)<{ expanded?: boolean }>(({ expanded }) => ({
+  padding: 'var(--space-4) var(--space-5)',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  backgroundColor: expanded ? '#f7f7f7' : 'transparent',
-  borderBottom: expanded ? '1px solid #e8e8e8' : 'none',
-  transition: 'all 0.2s ease',
+  background: expanded
+    ? 'linear-gradient(135deg, var(--surface-alt) 0%, var(--brand-primary-50) 100%)'
+    : 'transparent',
+  borderBottom: expanded ? '1px solid var(--grey-200)' : 'none',
+  transition: 'all var(--transition-fast)',
+  borderRadius: 'var(--radius-md)',
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: '3px',
+    background: 'linear-gradient(180deg, var(--brand-primary) 0%, var(--brand-accent) 100%)',
+    opacity: expanded ? 1 : 0,
+    transition: 'opacity var(--transition-fast)',
+  },
   '&:hover': {
-    backgroundColor: '#f7f7f7',
+    background: 'linear-gradient(135deg, var(--surface-hover) 0%, var(--brand-primary-100) 100%)',
+    transform: 'translateX(4px)',
+    '&::before': {
+      opacity: 0.7,
+    },
   },
 }))
 
@@ -142,8 +221,8 @@ export default function TasksPage() {
   )
 
   // State for enhanced task management
-  const [pendingReorders, setPendingReorders] = useState<Map<string, NodeJS.Timeout>>(new Map())
-  const [taskCountdowns, setTaskCountdowns] = useState<Map<string, number>>(new Map())
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null)
 
   useEffect(() => {
     if (highlightMeetingId) {
@@ -156,33 +235,10 @@ export default function TasksPage() {
     }
   }, [highlightMeetingId])
 
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      pendingReorders.forEach((timer) => {
-        clearTimeout(timer)
-      })
-    }
-  }, [])
+
 
   // Function to toggle task completion status
   const handleTaskToggle = (taskId: string) => {
-    // Clear any existing timer for this task
-    const existingTimer = pendingReorders.get(taskId)
-    if (existingTimer) {
-      clearTimeout(existingTimer)
-      setPendingReorders(prev => {
-        const newMap = new Map(prev)
-        newMap.delete(taskId)
-        return newMap
-      })
-      setTaskCountdowns(prev => {
-        const newMap = new Map(prev)
-        newMap.delete(taskId)
-        return newMap
-      })
-    }
-
     // Update task status immediately
     setTasks(prevTasks =>
       prevTasks.map(task =>
@@ -191,108 +247,15 @@ export default function TasksPage() {
           : task
       )
     )
-
-    // If task is being marked as completed, set up reorder timer
-    const task = tasks.find(t => t.id === taskId)
-    if (task && task.status !== 'completed') {
-      // Start countdown
-      setTaskCountdowns(prev => new Map(prev).set(taskId, 60))
-
-      // Update countdown every second
-      const countdownInterval = setInterval(() => {
-        setTaskCountdowns(prev => {
-          const newMap = new Map(prev)
-          const currentCount = newMap.get(taskId) || 0
-          if (currentCount > 1) {
-            newMap.set(taskId, currentCount - 1)
-            return newMap
-          } else {
-            newMap.delete(taskId)
-            return newMap
-          }
-        })
-      }, 1000)
-
-      // Set up reorder timer (60 seconds)
-      const reorderTimer = setTimeout(() => {
-        clearInterval(countdownInterval)
-        reorderCompletedTask(taskId)
-        setPendingReorders(prev => {
-          const newMap = new Map(prev)
-          newMap.delete(taskId)
-          return newMap
-        })
-        setTaskCountdowns(prev => {
-          const newMap = new Map(prev)
-          newMap.delete(taskId)
-          return newMap
-        })
-      }, 60000)
-
-      setPendingReorders(prev => new Map(prev).set(taskId, reorderTimer))
-    }
-  }
-
-  // Function to reorder completed tasks to bottom
-  const reorderCompletedTask = (taskId: string) => {
-    setTasks(prevTasks => {
-      const taskToMove = prevTasks.find(t => t.id === taskId)
-      if (!taskToMove || taskToMove.status !== 'completed') return prevTasks
-
-      const otherTasks = prevTasks.filter(t => t.id !== taskId)
-
-      // Group tasks by their section (my tasks, team tasks, meeting tasks)
-      const myTasks = otherTasks.filter(t => t.assignee === CURRENT_USER)
-      const teamTasks = otherTasks.filter(t => t.assignee !== CURRENT_USER)
-
-      if (taskToMove.assignee === CURRENT_USER) {
-        return [...myTasks, taskToMove, ...teamTasks]
-      } else {
-        return [...myTasks, ...teamTasks, taskToMove]
-      }
-    })
   }
 
   // Function to delete a task
   const handleDeleteTask = (taskId: string) => {
-    // Clear any pending timers for this task
-    const existingTimer = pendingReorders.get(taskId)
-    if (existingTimer) {
-      clearTimeout(existingTimer)
-      setPendingReorders(prev => {
-        const newMap = new Map(prev)
-        newMap.delete(taskId)
-        return newMap
-      })
-      setTaskCountdowns(prev => {
-        const newMap = new Map(prev)
-        newMap.delete(taskId)
-        return newMap
-      })
-    }
-
-    // Remove task from list
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId))
   }
 
   // Function to change task status (for in-progress)
   const handleStatusChange = (taskId: string, newStatus: 'todo' | 'in-progress' | 'completed') => {
-    // Clear any existing timer for this task if changing from completed
-    const existingTimer = pendingReorders.get(taskId)
-    if (existingTimer) {
-      clearTimeout(existingTimer)
-      setPendingReorders(prev => {
-        const newMap = new Map(prev)
-        newMap.delete(taskId)
-        return newMap
-      })
-      setTaskCountdowns(prev => {
-        const newMap = new Map(prev)
-        newMap.delete(taskId)
-        return newMap
-      })
-    }
-
     setTasks(prevTasks =>
       prevTasks.map(task =>
         task.id === taskId
@@ -302,14 +265,132 @@ export default function TasksPage() {
     )
   }
 
-  // Separate completed and non-completed tasks, keeping completed tasks visible until reordered
-  const myTasksIncomplete = sortTasksByPriority(tasks.filter((t) => t.assignee === CURRENT_USER && t.status !== 'completed'))
-  const myTasksCompleted = sortTasksByPriority(tasks.filter((t) => t.assignee === CURRENT_USER && t.status === 'completed'))
-  const myTasks = [...myTasksIncomplete, ...myTasksCompleted]
+  // Drag and Drop handlers
+  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    setDraggedTaskId(taskId)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', taskId)
 
-  const teamTasksIncomplete = sortTasksByPriority(tasks.filter((t) => t.assignee !== CURRENT_USER && t.status !== 'completed'))
-  const teamTasksCompleted = sortTasksByPriority(tasks.filter((t) => t.assignee !== CURRENT_USER && t.status === 'completed'))
-  const teamTasks = [...teamTasksIncomplete, ...teamTasksCompleted]
+    // Add visual feedback to dragged element
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.5'
+    }
+  }
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggedTaskId(null)
+    setDropTargetId(null)
+
+    // Reset visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1'
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDragEnter = (e: React.DragEvent, targetTaskId: string) => {
+    e.preventDefault()
+    if (draggedTaskId && draggedTaskId !== targetTaskId) {
+      setDropTargetId(targetTaskId)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear drop target if we're leaving the card entirely
+    if (e.currentTarget === e.target) {
+      setDropTargetId(null)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent, targetTaskId: string) => {
+    e.preventDefault()
+
+    if (!draggedTaskId || draggedTaskId === targetTaskId) {
+      return
+    }
+
+    const draggedTask = tasks.find(t => t.id === draggedTaskId)
+    const targetTask = tasks.find(t => t.id === targetTaskId)
+
+    if (!draggedTask || !targetTask) {
+      return
+    }
+
+    // Only allow reordering within the same section
+    const sameSection = (
+      (draggedTask.assignee === CURRENT_USER && targetTask.assignee === CURRENT_USER) ||
+      (draggedTask.assignee !== CURRENT_USER && targetTask.assignee !== CURRENT_USER) ||
+      (draggedTask.description.includes('From') && targetTask.description.includes('From') &&
+       draggedTask.description === targetTask.description)
+    )
+
+    if (!sameSection) {
+      return
+    }
+
+    // Reorder tasks
+    setTasks(prevTasks => {
+      const newTasks = [...prevTasks]
+      const draggedIndex = newTasks.findIndex(t => t.id === draggedTaskId)
+      const targetIndex = newTasks.findIndex(t => t.id === targetTaskId)
+
+      if (draggedIndex === -1 || targetIndex === -1) {
+        return prevTasks
+      }
+
+      // Remove dragged task and insert at target position
+      const [draggedItem] = newTasks.splice(draggedIndex, 1)
+      newTasks.splice(targetIndex, 0, draggedItem)
+
+      return newTasks
+    })
+
+    setDraggedTaskId(null)
+    setDropTargetId(null)
+  }
+
+  // Keyboard reordering handlers
+  const handleKeyDown = (e: React.KeyboardEvent, taskId: string) => {
+    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      e.preventDefault()
+
+      const taskIndex = tasks.findIndex(t => t.id === taskId)
+      if (taskIndex === -1) return
+
+      const direction = e.key === 'ArrowUp' ? -1 : 1
+      const newIndex = taskIndex + direction
+
+      if (newIndex < 0 || newIndex >= tasks.length) return
+
+      // Check if we're moving within the same section
+      const currentTask = tasks[taskIndex]
+      const targetTask = tasks[newIndex]
+
+      const sameSection = (
+        (currentTask.assignee === CURRENT_USER && targetTask.assignee === CURRENT_USER) ||
+        (currentTask.assignee !== CURRENT_USER && targetTask.assignee !== CURRENT_USER) ||
+        (currentTask.description.includes('From') && targetTask.description.includes('From') &&
+         currentTask.description === targetTask.description)
+      )
+
+      if (!sameSection) return
+
+      setTasks(prevTasks => {
+        const newTasks = [...prevTasks]
+        const [movedTask] = newTasks.splice(taskIndex, 1)
+        newTasks.splice(newIndex, 0, movedTask)
+        return newTasks
+      })
+    }
+  }
+
+  // Keep tasks in their original order - no automatic reordering
+  const myTasks = tasks.filter((t) => t.assignee === CURRENT_USER)
+  const teamTasks = tasks.filter((t) => t.assignee !== CURRENT_USER)
 
   const meetingGroups = new Map<string, { meeting: Meeting; tasks: Task[] }>()
   const allMeetings = [...mockMeetings, ...pastMeetings]
@@ -329,7 +410,7 @@ export default function TasksPage() {
   const sortedMeetingGroups = Array.from(meetingGroups.values())
     .map(group => ({
       ...group,
-      tasks: sortTasksByPriority(group.tasks)
+      tasks: group.tasks // Keep original task order within meetings
     }))
     .sort((a, b) => b.meeting.date.getTime() - a.meeting.date.getTime())
 
@@ -361,11 +442,11 @@ export default function TasksPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 size={16} color="#22c55e" />
+        return <CheckCircle2 size={16} color="var(--brand-primary)" />
       case 'in-progress':
-        return <Clock size={16} color="#3b82f6" />
+        return <Clock size={16} color="var(--brand-accent)" />
       default:
-        return <Circle size={16} color="#8e8e8e" />
+        return <Circle size={16} color="var(--grey-400)" />
     }
   }
 
@@ -375,20 +456,47 @@ export default function TasksPage() {
     onToggle,
     onDelete,
     onStatusChange,
-    countdown
   }: {
     task: Task;
     highlight?: boolean;
     onToggle?: (taskId: string) => void;
     onDelete?: (taskId: string) => void;
     onStatusChange?: (taskId: string, status: 'todo' | 'in-progress' | 'completed') => void;
-    countdown?: number;
-  }) => (
-    <TaskCard
-      highlight={highlight}
-      sx={{
-        opacity: task.status === 'completed' ? 0.7 : 1,
-        transition: 'opacity 0.2s ease',
+  }) => {
+    const isDragging = draggedTaskId === task.id
+    const isDropTarget = dropTargetId === task.id
+
+    return (
+      <TaskCard
+        draggable
+        highlight={highlight}
+        onDragStart={(e) => handleDragStart(e, task.id)}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver}
+        onDragEnter={(e) => handleDragEnter(e, task.id)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(e, task.id)}
+        onKeyDown={(e) => handleKeyDown(e, task.id)}
+        tabIndex={0}
+        role="button"
+        aria-grabbed={isDragging}
+        aria-dropeffect="move"
+        sx={{
+          opacity: task.status === 'completed' ? 0.7 : 1,
+          transition: 'all 0.2s ease',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          transform: 'none',
+          borderColor: isDropTarget ? 'var(--brand-primary)' : undefined,
+          backgroundColor: isDropTarget ? 'var(--brand-primary-50)' : undefined,
+          boxShadow: isDropTarget ? '0 0 0 2px var(--brand-primary-200)' : undefined,
+          borderLeft: task.priority === 'high' ? '4px solid var(--priority-high)' :
+                     task.priority === 'medium' ? '4px solid var(--priority-medium)' :
+                     '4px solid var(--brand-accent)',
+          '&:hover': {
+            boxShadow: task.priority === 'high' ? '0 8px 24px rgba(239, 68, 68, 0.15)' :
+                      task.priority === 'medium' ? '0 8px 24px rgba(245, 158, 11, 0.15)' :
+                      '0 8px 24px rgba(75, 163, 195, 0.15)',
+          },
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
@@ -419,9 +527,12 @@ export default function TasksPage() {
               {task.title}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Badge variant={getPriorityColor(task.priority)}>
+              <Box
+                className={`badge badge-priority-${task.priority}`}
+                sx={{ textTransform: 'uppercase', fontSize: '0.75rem' }}
+              >
                 {task.priority}
-              </Badge>
+              </Box>
               {/* Delete Button */}
               <IconButton
                 size="small"
@@ -484,56 +595,62 @@ export default function TasksPage() {
             </FormControl>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <User size={12} color="#8e8e8e" />
-              <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
+              <User size={12} color="var(--brand-accent)" />
+              <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
                 {task.assignee}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Calendar size={12} color="#8e8e8e" />
-              <Typography variant="caption" sx={{ color: '#8e8e8e' }}>
+              <Calendar size={12} color="var(--brand-primary)" />
+              <Typography variant="caption" sx={{ color: 'var(--text-secondary)' }}>
                 {new Date(task.dueDate).toLocaleDateString()}
               </Typography>
             </Box>
           </Box>
 
-          {/* Countdown Display */}
-          {countdown && countdown > 0 && (
-            <Box sx={{
-              mt: 1,
-              p: 1,
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              borderRadius: 1,
-              border: '1px solid rgba(59, 130, 246, 0.2)'
-            }}>
-              <Typography variant="caption" sx={{ color: '#3b82f6', fontWeight: 500 }}>
-                ⏱️ Moving to bottom in {countdown}s
-              </Typography>
-            </Box>
-          )}
+
         </Box>
       </Box>
     </TaskCard>
-  )
+    )
+  }
 
   return (
     <MainContainer>
-      <Typography variant="h3" sx={{ fontWeight: 700, color: '#252525', mb: 4 }}>
-        Tasks
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+        <Box className="icon-container-primary">
+          <CheckSquare size={24} color="var(--brand-primary)" />
+        </Box>
+        <Typography variant="h3" sx={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+          Tasks
+        </Typography>
+      </Box>
 
       {/* My Action Items */}
       <SectionCard>
         <SectionHeader>
-          <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525' }}>
-            My Action Items ({myTasks.length})
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box className="icon-container-primary">
+              <User size={18} color="var(--brand-primary)" />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+              My Action Items ({myTasks.length})
+            </Typography>
+          </Box>
         </SectionHeader>
         <CardContent>
           {myTasks.length === 0 ? (
-            <Typography variant="body2" sx={{ color: '#8e8e8e', textAlign: 'center', py: 4 }}>
-              No action items assigned to you.
-            </Typography>
+            <Box className="empty-state-decoration" sx={{ textAlign: 'center', py: 6, position: 'relative' }}>
+              <Box sx={{ position: 'relative', zIndex: 1 }}>
+                <CheckSquare size={48} color="var(--brand-primary)" style={{ opacity: 0.3, marginBottom: '16px' }} />
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
+                  No action items assigned to you.
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'var(--text-tertiary)', mt: 1, display: 'block' }}>
+                  New tasks will appear here when assigned
+                </Typography>
+              </Box>
+            </Box>
           ) : (
             myTasks.map((task) => (
               <TaskCardComponent
@@ -542,7 +659,6 @@ export default function TasksPage() {
                 onToggle={handleTaskToggle}
                 onDelete={handleDeleteTask}
                 onStatusChange={handleStatusChange}
-                countdown={taskCountdowns.get(task.id)}
               />
             ))
           )}
@@ -552,15 +668,28 @@ export default function TasksPage() {
       {/* Team Action Items */}
       <SectionCard>
         <SectionHeader>
-          <Typography variant="h5" sx={{ fontWeight: 600, color: '#252525' }}>
-            Team Action Items ({teamTasks.length})
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box className="icon-container-accent">
+              <Users size={18} color="var(--brand-accent)" />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+              Team Action Items ({teamTasks.length})
+            </Typography>
+          </Box>
         </SectionHeader>
         <CardContent>
           {teamTasks.length === 0 ? (
-            <Typography variant="body2" sx={{ color: '#8e8e8e', textAlign: 'center', py: 4 }}>
-              No team action items.
-            </Typography>
+            <Box className="empty-state-decoration" sx={{ textAlign: 'center', py: 6, position: 'relative' }}>
+              <Box sx={{ position: 'relative', zIndex: 1 }}>
+                <Users size={48} color="var(--brand-accent)" style={{ opacity: 0.3, marginBottom: '16px' }} />
+                <Typography variant="body2" sx={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
+                  No team action items.
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'var(--text-tertiary)', mt: 1, display: 'block' }}>
+                  Team tasks will appear here when created
+                </Typography>
+              </Box>
+            </Box>
           ) : (
             teamTasks.map((task) => (
               <TaskCardComponent
@@ -569,7 +698,6 @@ export default function TasksPage() {
                 onToggle={handleTaskToggle}
                 onDelete={handleDeleteTask}
                 onStatusChange={handleStatusChange}
-                countdown={taskCountdowns.get(task.id)}
               />
             ))
           )}
@@ -606,11 +734,14 @@ export default function TasksPage() {
                     <IconButton size="small" sx={{ p: 0 }}>
                       {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                     </IconButton>
+                    <Box className="icon-container-primary" sx={{ minWidth: 'auto', p: 1 }}>
+                      <Video size={16} color="var(--brand-primary)" />
+                    </Box>
                     <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#252525' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                         {meeting.title}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#8e8e8e' }}>
+                      <Typography variant="body2" sx={{ color: 'var(--text-secondary)' }}>
                         {formatDate(meeting.date)} • {meetingTasks.length} tasks
                       </Typography>
                     </Box>
@@ -630,7 +761,6 @@ export default function TasksPage() {
                         onToggle={handleTaskToggle}
                         onDelete={handleDeleteTask}
                         onStatusChange={handleStatusChange}
-                        countdown={taskCountdowns.get(task.id)}
                       />
                     ))}
                   </Box>
